@@ -1,0 +1,6 @@
+Locked/
+versioned/
+*.dbf
+*.csv
+*.prj
+*.shp
