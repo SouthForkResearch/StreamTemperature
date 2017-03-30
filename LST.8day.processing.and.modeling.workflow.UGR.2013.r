@@ -14,6 +14,21 @@
 # then fills any remaining gaps across the year at each pixel with a linear interpolation.
 ##############################################################################################
 
+############### This part reads in the 1km points from a previous year and writes them back out for the current year ####
+setwd(paste0(mainPath2, "/", subDir, "_", yearPath))
+
+ptsname <- paste0(basin, "_", yrPath, "_lst")
+pts <- readOGR(dsn=".", layer=ptsname)
+pts.out <- pts[,-c(2:47)]
+
+yrPath <- "15"
+yearPath <- "2015"
+
+setwd(paste0(mainPath2, "/", subDir, "_", yearPath))
+pts.out.name<- paste0(basin, "_", yrPath, "_lst")
+writeOGR(pts.out, dsn=".", layer=pts.out.name, driver="ESRI Shapefile")
+
+###############################################
 
 library(timeSeries)
 library(lattice)
