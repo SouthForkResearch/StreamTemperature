@@ -16,10 +16,10 @@ arcpy.CheckOutExtension("spatial")
 gp = arcgisscripting.create()
 
 # Local variables:
-s1dir = "D:\\OneDrive\\work\\GIS\\8_day_1km_LST\\LST_s12_2011\\s1_2011\\"
-s2dir = "D:\\OneDrive\\work\\GIS\\8_day_1km_LST\\LST_s12_2011\\s2_2011\\"
-outdir = "D:\\OneDrive\\work\\GIS\\8_day_1km_LST\\LST_s12_2011\\"
-projdir = "D:\\OneDrive\\work\\research\\CHaMP\\GIS\\LST\\LST_s12_2011\\"
+s1dir = "D:\\OneDrive\\work\\GIS\\8_day_1km_LST\\LST_s12_2013\\lst_s1_2013\\"
+s2dir = "D:\\OneDrive\\work\\GIS\\8_day_1km_LST\\LST_s12_2013\\lst_s2_2013\\"
+outdir = "D:\\OneDrive\\work\\GIS\\8_day_1km_LST\\LST_s12_2013\\"
+projdir = "D:\\OneDrive\\work\\research\\CHaMP\\GIS\\LST\\LST_s12_2013\\"
 sr = r"D:\OneDrive\work\research\MODIS_sin.prj"
 bands = 1
 method = "First"
@@ -33,9 +33,9 @@ readFieldList.close
 for item in FieldList:
     item = item.replace("\n","")
     print item
-    rast1 = s1dir + "lsts111" + item
-    rast2 = s2dir + "lsts211" + item
-    outrast = "lst_s1211" + item
+    rast1 = s1dir + "lsts113" + item
+    rast2 = s2dir + "lsts213" + item
+    outrast = "lst_s1213" + item
     # Process: Mosaic To New Raster
     arcpy.MosaicToNewRaster_management([rast1, rast2], outdir, outrast, sr, "8_BIT_UNSIGNED", "926.6254331", bands, method, clMap)
     

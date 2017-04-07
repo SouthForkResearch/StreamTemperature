@@ -17,9 +17,9 @@ gp = arcgisscripting.create()
 # Load required toolboxes...
 gp.AddToolbox("C:\\Program Files (x86)\\ArcGIS\\Desktop10.2\\ArcToolbox\\Toolboxes\\Spatial Analyst Tools.tbx")
 
-gp.workspace = "D:\\OneDrive\\work\\GIS\\8_day_1km_LST\\LST_s12_2011\\"
-outfolder = "D:\\OneDrive\\work\\GIS\\8_day_1km_LST\\LST_s12_2011\\"
-inPointFeatures = "D:\\OneDrive\\work\\GIS\\8_day_1km_LST\\LST_s12_2011\\Panth_11_LST.shp"
+gp.workspace = "D:\\OneDrive\\work\\research\\CHaMP\\GIS\\LST\\LST_s12_2013\\"
+outfolder = "D:\\OneDrive\\work\research\\CHaMP\\\GIS\\LST\\LST_s12_2013\\"
+inPointFeatures = "D:\\OneDrive\\work\\research\\CHaMP\\GIS\\coverages\\U_Salmon\\USal_13_LST.shp"
 
 readFieldList = open("D:\\OneDrive\\work\\GIS\\8_day_1km_LST\\LST_s1_2001\\gridlist.txt", 'r')
 FieldList = readFieldList.readlines()
@@ -28,7 +28,7 @@ readFieldList.close
 for item in FieldList:
     item = item.replace("\n","")
     print item
-    inraster = "lst_s1211" + item 
+    inraster = "lst_s1213" + item 
     arcpy.gp.ExtractMultiValuesToPoints_sa(inPointFeatures, [[inraster, item]], "NONE")  
     
     

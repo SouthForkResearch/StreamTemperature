@@ -16,11 +16,9 @@ arcpy.CheckOutExtension("spatial")
 gp = arcgisscripting.create()
 
 # Local variables:
-s1dir = "D:\\OneDrive\\work\\GIS\\8_day_1km_LST\\LST_s12_2011\\s1_2011\\"
-s2dir = "D:\\OneDrive\\work\\GIS\\8_day_1km_LST\\LST_s12_2011\\s2_2011\\"
-outdir = "D:\\OneDrive\\work\\GIS\\8_day_1km_LST\\LST_s12_2011\\"
-projdir = "D:\\OneDrive\\work\\research\\CHaMP\\GIS\\LST\\LST_s12_2011\\"
-sr = r"D:\OneDrive\work\research\MODIS_sin.prj"
+outdir = "D:\\OneDrive\\work\\research\\CHaMP\\GIS\\LST\\LST_s12_2013\\"
+projdir = "D:\\OneDrive\\work\\GIS\\8_day_1km_LST\\LST_s12_2013\\"
+sr1 = r"D:\OneDrive\work\research\MODIS_sin.prj"
 bands = 1
 method = "First"
 clMap = "First"
@@ -33,7 +31,7 @@ readFieldList.close
 for item in FieldList:
     item = item.replace("\n","")
     print item
-    outrast = outdir + "lst_s1211" + item
+    outrast = outdir + "lst_s1213" + item
     projrast = projdir + outrast
     # Process: Mosaic To New Raster
-    arcpy.ProjectRaster_management(outrast, projrast, sr2)
+    arcpy.ProjectRaster_management(outrast, projrast, out_coor_system=sr2,resampling_type="NEAREST",cell_size="926.6254331 926.6254331",geographic_transform="#",Registration_Point="#",in_coor_system="PROJCS['User_Defined_Sinusoidal',GEOGCS['GCS_User_Defined',DATUM['D_User_Defined',SPHEROID['User_Defined_Spheroid',6371007.181,0.0]],PRIMEM['Greenwich',0.0],UNIT['Degree',0.0174532925199433]],PROJECTION['Sinusoidal'],PARAMETER['False_Easting',0.0],PARAMETER['False_Northing',0.0],PARAMETER['central_meridian',0.0],UNIT['Meter',1.0]]")
