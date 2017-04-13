@@ -46,51 +46,56 @@ library(classInt)
   
   LST.names<-colnames(LST.in)
   
-  tLST.in <- t(LST.in)
-  tLST.out <- na.spline(tLST.in)
-  CLST <- tLST.out*0.02-273.15
-  tCLST <- t(CLST)
-  CLST.out <- as.data.frame(tCLST)
-  
-################### this is vestigial code but left in case it's useful ################
-  
   myFunc <- function(x)
     {
       if (is.na(x[1]))
       {
-        x[1] <- x[2]
+        x[1] <- 13022
       }
       x
     }
   
-  LST.filled <- apply(CLST.out, 1, function(x) myFunc(x))
+  LST.filled <- apply(LST.in, 1, function(x) myFunc(x))
+  LST.filled <- as.data.frame(t(LST.filled))
+  
   
   myFunc2 <- function(x)
     {
-      if (is.na(x[45]))
+      if (is.na(x[46]))
       {
-        x[45] <- x[44]
+        x[46] <- x[43]
       }
       x
     }
   
-  tLST.filled <- t(LST.filled)
-  LST.filled <- apply(tLST.filled, 1, function(x) myFunc2(x))
+  
+  LST.filled <- apply(LST.filled, 1, function(x) myFunc2(x))
+  LST.filled <- as.data.frame(t(LST.filled))
   
   myFunc3 <- function(x)
     {
       if (is.na(x[46]))
       {
-        x[46] <- x[45]
+        x[46] <- 12943
       }
       x
     }
+    
+  LST.filled <- apply(LST.filled, 1, function(x) myFunc3(x))
+  LST.filled <- as.data.frame(t(LST.filled))
   
-  tLST.filled <- t(LST.filled)
-  LST.filled <- apply(tLST.filled, 1, function(x) myFunc3(x))
-  tLST.filled <- t(LST.filled)
-  LST.out <- as.data.frame(tLST.filled)
-  CLST.out <- LST.out
+  tLST.in <- t(LST.filled)
+  
+  tLST.out <- na.spline(tLST.in)
+  CLST <- tLST.out*0.02-273.15
+  tCLST <- t(CLST)
+  CLST.out <- as.data.frame(tCLST)
+  
+  
+  CLST.out$PointID <- PointID
+  colnames(CLST.out)[1:46] <- LST.names
+  
+
 ####################################################  
   
   
