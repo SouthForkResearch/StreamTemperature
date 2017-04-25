@@ -800,8 +800,8 @@ setwd(paste0(modelPath, "/graphics/"))
 Still graphic output for wiki or web or wev
 ```{r}
   i <- 22  
-  namey <- gsub(paste0("T", var, yrPath, "_"), "", colnames(network@data)[i])
-  fix3 <- classIntervals(network@data[,i], n = 11, style = "fixed",fixedBreaks=c(-1,6,8,10,12,14,16,18,20,22,24))
+  namey <- gsub(paste0("T", var, "_", yrPath, "_"), "", colnames(net@data)[i])
+  fix3 <- classIntervals(net@data[,i], n = 11, style = "fixed",fixedBreaks=c(-1,6,8,10,12,14,16,18,20,22,24))
   fix3.colors <- findColours(fix3,pal=seis)
   
   filename <- paste0(modelPath, "/graphics/Stills/", basin, "_", yearPath, "_8D_", var, ".png", sep="")
@@ -812,7 +812,7 @@ Still graphic output for wiki or web or wev
                                ifelse(abs(error_pts@data[,i])>2, 1.0,
                                       ifelse(abs(error_pts@data[,i])>3, 1.25, NA))))
         
-        plot(network, col=fix3.colors, bg="white", fg="black")
+        plot(net, col=fix3.colors, bg="white", fg="black")
         points(error_pts, pch=16, col="gray40", cex=cexEr)
         
         legend("topright", fill = attr(fix3.colors, "palette"), title=paste0("8-day ", var, " (°C)"),legend = c("0-6","6-8","8-10","10-12","12-14","14-16","16-18","18-20", "20-22", "22+"), bty = "n", cex=.5, inset=c(0,0), text.col="black");
