@@ -1,0 +1,82 @@
+<?xml version="1.0" ?>
+<Project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+				 xsi:noNamespaceSchemaLocation="XSD/V1/Project.xsd">
+
+	<Name>stream_temperature_project</Name>
+	<ProjectType>STREAMTEMP</ProjectType>
+	<MetaData>
+		<Meta name="HUCID">17060201</Meta>
+		<Meta name="Region">CRB</Meta>
+		<Meta name="Watershed">Upper Salmon</Meta>
+	</MetaData>
+	<Inputs>
+	</Inputs>
+	<Realizations>
+		<StreamTemperature dateCreated="2017-01-18 12:08:45" id="streamtemp" guid="5D74C6CD-21F0-4439-9A62-6883A926803E" productVersion="1.0">
+			<Name>Stream Temperature for Upper Salmon 2011</Name>
+      <Inputs>
+			</Inputs>
+
+      <MetaData>
+        <Meta name="MODIS_dataset">MOD11A2v005</Meta>
+        <Meta name="EOSDIS">https://reverb.echo.nasa.gov/reverb/</Meta>
+        <Meta name="Logger_data">www.champmonitoring.org</Meta>
+        <Meta name="Code_wiki">https://github.com/SouthForkResearch/StreamTemperature/wiki</Meta>
+      </MetaData>
+
+			<Analyses>
+        <Analysis>
+          <Name>Analysis</Name>
+          <Outputs>
+
+            <CSV id="coeffs">
+              <Name>Model_coefficients</Name>
+              <Path>All_data_USal_2011_mod_coeffs_Mn.csv</Path>
+            </CSV>
+
+            <CSV id="metrics">
+              <Name>Model_metrics</Name>
+              <Path>All_data_USal_2011_mod_metrics_Mn.csv</Path>
+            </CSV>
+
+            <CSV id="error">
+              <Name>Model_error</Name>
+              <Path>Error2011_USal_8D_Mn.csv</Path>
+            </CSV>
+
+            <CSV id="estimates">
+              <Name>Model_data_prediction</Name>
+              <Path>jk_pred_v_y_Mn_USal_2011_sp_fall.csv</Path>
+            </CSV>
+
+            <CSV id="modelData">
+              <Name>Model_input_data</Name>
+              <Path>USal_2011_8Day_Mn_model_data.csv</Path>
+            </CSV>
+
+            <Image id="still">
+              <Name>Network_estimate_snapshot</Name>
+              <Path>graphics/Stills/USal_2011_8D_Mn.png</Path>
+            </Image>
+
+            <Video id="movie">
+              <Name>Network_annual_estimate_animation</Name>
+              <Path>graphics/USal_2011_8D_mn.mpeg</Path>
+            </Video>
+
+            <Vector id="network">
+              <Name>Network_estimate_shapefile</Name>
+              <Path>USal_2011_8D_Mn.shp</Path>
+            </Vector>
+
+            <Vector id="errorPts">
+              <Name>Error_by_site_points</Name>
+              <Path>USal_Error_2011_8D_Mn.shp</Path>
+            </Vector>
+
+          </Outputs>
+        </Analysis>
+			</Analyses>
+		</StreamTemperature>
+	</Realizations>
+</Project>
