@@ -66,31 +66,49 @@ cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
             <CSV id=\"coeffs\">
               <Name>Model_coefficients</Name>
               <Path>All_data_",basin,"_",yearPath,"_mod_coeffs_",var,".csv</Path>
+              <MetaData>
+                <Meta name=\"description\">Parameter coefficients for the final model</Meta>
+              </MetaData>
             </CSV>
 
             <CSV id=\"metrics\">
               <Name>Model_metrics</Name>
               <Path>All_data_",basin,"_",yearPath,"_mod_metrics_",var,".csv</Path>
+              <MetaData>
+                <Meta name=\"description\">Model quality metrics</Meta>
+              </MetaData>
             </CSV>
 
             <CSV id=\"error\">
               <Name>Model_error</Name>
               <Path>Error_",basin,"_",yearPath,"_8D_",var,".csv</Path>
+              <MetaData>
+                <Meta name=\"description\">Model estimation error for each 8-day period by site</Meta>
+              </MetaData>
             </CSV>
 
             <CSV id=\"estimates\">
               <Name>Model_data_prediction</Name>
               <Path>jk_pred_v_y_",var, "_", basin,"_",yearPath,"_sp_fall.csv</Path>
+              <MetaData>
+                <Meta name=\"description\">Jack-knifed temperature estimate for each 8-day logger input</Meta>
+              </MetaData>
             </CSV>
 
             <CSV id=\"modelData\">
               <Name>Model_input_data</Name>
-              <Path>", basin,"_",yearPath,"_8D_",var,"_model_data.csv</Path>
+              <Path>", basin,"_",yearPath,"_8Day_",var,"_model_data.csv</Path>
+              <MetaData>
+                <Meta name=\"description\">Formatted input data used in the model</Meta>
+              </MetaData>
             </CSV>
           
             <Image id=\"still\">
               <Name>Network_estimate_snapshot</Name>
               <Path>graphics/Stills/",basin,"_",yearPath,"_8D_",var,".png</Path>
+              <MetaData>
+                <Meta name=\"description\">Still image of estimated temperature and error-by-site on the network for one day</Meta>
+              </MetaData>
             </Image>
 
             <Video id=\"movie\">
@@ -101,11 +119,17 @@ cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
             <Vector id=\"network\">
               <Name>Network_estimate_shapefile</Name>
               <Path>",basin,"_",yearPath,"_8D_",var,".shp</Path>
+              <MetaData>
+                <Meta name=\"description\">Shapefile of network with temperature estimates for each 8-day period</Meta>
+              </MetaData>
             </Vector>
 
             <Vector id=\"errorPts\">
               <Name>Error_by_site_points</Name>
               <Path>",basin,"_Error_",yearPath,"_8D_",var,".shp</Path>
+              <MetaData>
+                <Meta name=\"description\">Point shapefile of all included sites with model estimation error</Meta>
+              </MetaData>
             </Vector>
 
           </Outputs>
