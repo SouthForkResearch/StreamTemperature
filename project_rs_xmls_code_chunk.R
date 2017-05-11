@@ -4,20 +4,6 @@ library(uuid)
 # Generate project.rs.xml file starting here!!!!
 ################################################################
 
-basin <- "Wen"
-midBasin <- "Wenatchee"
-longBasin <- "Wenatchee"
-yrPath <- "12"
-yearPath <- "2012"
-dataPath <- "D:/OneDrive/work/research/CHaMP/GIS/LST/LST_s1_"
-mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
-metricPath <- "D:/Dropbox/StreamTemperatureModels/"
-var <- "Min"
-longVar <- "Min"
-nameBasin <- "Wenatchee"
-modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/Min/")
-gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
-
 Realizguid = UUIDgenerate(F)
 
 now <- Sys.Date()
@@ -29,53 +15,53 @@ now <- Sys.Date()
 cat("", file=paste(modelPath,"project.rs.xml",sep=""))
 
 cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
-<Project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
-  xsi:noNamespaceSchemaLocation=\"XSD/V1/Project.xsd\">
-
-  <Name>stream_temperature_project</Name>
-  <ProjectType>STREAMTEMP</ProjectType>
-
-  <MetaData>
-    <!--This first metadata exists only to place this project in the riverscapes project-->
-    <Meta name=\"HUCID\">17060201</Meta>
-		<Meta name=\"Region\">CRB</Meta>
-    <Meta name=\"Watershed\">",longBasin,"</Meta>
-  </MetaData>
-
-  
-  <Inputs>
-  </Inputs>
-
-  <Realizations>
-    <StreamTemperature guid=",Realizguid," id=\"streamtemp\" dateCreated=\"",now,"\" productVersion=\"1.0\">
-      <Name>Stream Temperature for ",nameBasin, " ",yearPath,"</Name>
-
-      <MetaData>
-        <!--This next metadata relates to this particular realization-->
-        <Meta name=\"MODIS_dataset\">MOD11A2v005</Meta>
-        <Meta name=\"EOSDIS\">https://reverb.echo.nasa.gov/reverb/</Meta>
-        <Meta name=\"Logger_data_source\">www.champmonitoring.org</Meta>
-        <Meta name=\"Code_wiki\">https://github.com/SouthForkResearch/StreamTemperature/wiki</Meta>
-      </MetaData>
-
-      <Analyses>
-        <Analysis>
+          <Project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
+          xsi:noNamespaceSchemaLocation=\"https://raw.githubusercontent.com/Riverscapes/Program/master/Project/XSD/V1/Project.xsd\">
+          
+          <Name>stream_temperature_project</Name>
+          <ProjectType>STREAMTEMP</ProjectType>
+          
+          <MetaData>
+          <!--This first metadata exists only to place this project in the riverscapes project-->
+          <Meta name=\"HUCID\">17060201</Meta>
+          <Meta name=\"Region\">CRB</Meta>
+          <Meta name=\"Watershed\">",longBasin,"</Meta>
+          </MetaData>
+          
+          
+          <Inputs>
+          </Inputs>
+          
+          <Realizations>
+          <StreamTemperature guid=\"",Realizguid,"\" id=\"streamtemp\" dateCreated=\"",now,"\" productVersion=\"1.0\">
+          <Name>Stream Temperature for ",nameBasin, " ",yearPath,"</Name>
+          
+          <MetaData>
+          <!--This next metadata relates to this particular realization-->
+          <Meta name=\"MODIS_dataset\">MOD11A2v005</Meta>
+          <Meta name=\"EOSDIS\">https://reverb.echo.nasa.gov/reverb/</Meta>
+          <Meta name=\"Logger_data_source\">www.champmonitoring.org</Meta>
+          <Meta name=\"Code_wiki\">https://github.com/SouthForkResearch/StreamTemperature/wiki</Meta>
+          </MetaData>
+          
+          <Analyses>
+          <Analysis>
           <Name>Stream Temp Analysis</Name>
           <Outputs>
-
-            <CSV id=\"coeffs\">
-              <Name>Model_coefficients</Name>
-              <Path>All_data_",basin,"_",yearPath,"_mod_coeffs_",var,".csv</Path>
-              <MetaData>
-                <Meta name=\"description\">Parameter coefficients for the final model</Meta>
-              </MetaData>
-            </CSV>
-
-            <CSV id=\"metrics\">
-              <Name>Model_metrics</Name>
-              <Path>All_data_",basin,"_",yearPath,"_mod_metrics_",var,".csv</Path>
-              <MetaData>
-                <Meta name=\"description\">Model quality metrics</Meta>
+          
+          <CSV id=\"coeffs\">
+          <Name>Model_coefficients</Name>
+          <Path>All_data_",basin,"_",yearPath,"_mod_coeffs_",var,".csv</Path>
+          <MetaData>
+          <Meta name=\"description\">Parameter coefficients for the final model</Meta>
+          </MetaData>
+          </CSV>
+          
+          <CSV id=\"metrics\">
+          <Name>Model_metrics</Name>
+          <Path>All_data_",basin,"_",yearPath,"_mod_metrics_",var,".csv</Path>
+          <MetaData>
+          <Meta name=\"description\">Model quality metrics</Meta>
               </MetaData>
             </CSV>
 
@@ -139,4 +125,3 @@ cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
   </Realizations>
 </Project>
 ",sep=""), file=paste(modelPath,"project.rs.xml",sep=""), append=T)
-
