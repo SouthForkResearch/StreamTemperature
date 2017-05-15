@@ -43,7 +43,8 @@ library(uuid)
   
   var <- "Min"
   longVar <- "Min"
- 
+  dataVar <- "X8DayMin" #name of the variable in the logger data
+  
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
   
@@ -629,6 +630,7 @@ This parts formats the error by day/site info
   colnames(Pred.in)<-gsub(varName, "", colnames(Pred.in))
   colnames(Pred.in)<-gsub("_", "", colnames(Pred.in))
   newnamesnum <- as.numeric(colnames(Pred.in)[1:46]);
+  names.out <- sprintf("%s_%03d", varName, newnamesnum)
   
   Pred.Log.out <- data.frame (mup = NULL)
   SiteID <- unique(Log.in$SiteName)
@@ -655,15 +657,15 @@ This parts formats the error by day/site info
   ind <- apply(Pred.Log.out, 1, function(x) !any(is.na(x)))
   NoNA.pred <- Pred.Log.out[ind,]
   
-  NoNA.pred <- NoNA.pred[,c(8, 2, 1, 3)]
-  colnames(NoNA.pred) <- c("Obs", "Pred", "JulDay", "SiteName")
+  NoNA.pred <- NoNA.pred[,c(dataVar, "Pred", "JulDay", "SiteName")]
+  colnames(NoNA.pred)[1] <- c("Obs")
   
 
   SiteID <- unique(NoNA.pred$SiteName)
   SiteID <- as.matrix(SiteID)
   Error.pts.out <- matrix(nrow = length(SiteID), ncol = 47)
   
-  errorName <- paste0("JulDay_", namesnum)
+  errorName <- sprintf("%s_%03d", "JulDay", newnamesnum)
   colnames(Error.pts.out)[2:47] <- errorName
   colnames(Error.pts.out)[1] <- "SiteName"
   
@@ -678,7 +680,7 @@ This parts formats the error by day/site info
         
         
         error <- matrix(ncol=1, nrow=46)
-        error[,1] <- namesnum
+        error[,1] <- newnamesnum
         error <- data.frame(error)
         colnames(error) <- c("JulDay")
         
@@ -705,13 +707,13 @@ Geospatial data output
   error_pts@data <- error_pts@data[,c(4,8)]
   
   network <- readOGR(dsn=gisPath, layer = netname)
-  network@data <- network@data[,c(3,5)]
-  
+
   error_pts <- spTransform(error_pts, proj4string(network))
   
   error_pts <- merge(error_pts, Error.pts.out, by.x="Site_ID", by.y="SiteName")
-  network <- merge(network, LogPred.out, by.x = "RCAID", by.y = "RCAID")                    
-                    
+  network <- merge(network, Pred.in, by.x = "RCAID", by.y = "RCAID")                    
+  colnames(network@data)[3:48] <- names.out   
+  
   outnetname <- paste0(basin, "_", yearPath, "_8D_", var)
   outptsname <- paste0(basin, "_Error_", yearPath, "_8D_", var)
   
