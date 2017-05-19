@@ -879,7 +879,7 @@ cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
   xsi:noNamespaceSchemaLocation=\"https://raw.githubusercontent.com/Riverscapes/Program/master/Project/XSD/V1/Project.xsd\">
 
   <Name>stream_temperature_project</Name>
-  <ProjectType>STREAMTEMP</ProjectType>
+  <ProjectType>STREAMTEMPMAX</ProjectType>
 
   <MetaData>
     <!--This first metadata exists only to place this project in the riverscapes project-->
