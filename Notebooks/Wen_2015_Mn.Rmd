@@ -1,5 +1,5 @@
 ---
-title: "Wenatchee 2015 Min"
+title: "Wenatchee 2015 Mean"
 output: html_notebook
 ---
 
@@ -32,22 +32,21 @@ library(classInt)
   basin <- "Wen"
   midBasin <- "Wenatchee"
   longBasin <- "Wenatchee"
-  
-  nameBasin <- "Wenatchee" #this is from the Projects XML list of approved names
-    
   yrPath <- "15"
   yearPath <- "2015"
+  
+  nameBasin <- "Wenatchee" #this is from the Projects XML list of approved names
+  
   dataPath <- "D:/OneDrive/work/GIS/8_day_1km_LST/LST_s12_"
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Min"
-  longVar <- "Min"
-  dataVar <- "X8DayMin" #name of the variable in the logger data
-  capVar <- "MIN"
+  var <- "Mn"
+  longVar <- "Mean"
+  dataVar <- "X8DayMn" #name of the variable in the logger data
+  capVar <- "MEAN"
   
-
-  modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/Min/")
+  modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar,"/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
   
 ```
@@ -199,7 +198,7 @@ Model building
   ind <- apply(LST.Log.out, 1, function(x) !any(is.na(x)))
   NoNA.xyz <- LST.Log.out[ind,]
   
-  NoNA.xyz <- NoNA.xyz[,c(10, 2, 1, 3, 5)]
+  NoNA.xyz <- NoNA.xyz[,c(9, 2, 1, 3, 5)]
   colnames(NoNA.xyz) <- c("y", "x", "z", "e", "SiteName")
   
   write.csv(x=NoNA.xyz, file= paste0(basin, "_", yearPath, "_8Day_", var, "_model_data.csv"), row.names = FALSE)
@@ -364,7 +363,7 @@ plot model diagnostics
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(%#rows#%), ])
+  mod <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(324,337,338,340,351,352,353), ])
 ```
 recheck for outliers
 ```{r}
@@ -382,7 +381,7 @@ more tests: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(%##%), ]
+  data.sp <- data.sp[-c(324,337,338,340,351,352,353), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -614,11 +613,11 @@ This part applies the model coefficients to the LST to generate 8-day temp estim
 ```
 Plot some reaches to take a peek
 ```{r}  
-  {plot(namesnum, LogPred.out[1000,1:46])
+  {plot(namesnum, LogPred.out[800,1:46])
   points(namesnum, LogPred.out[10, 1:46], pch=16, col="blue")
-  points(namesnum, LogPred.out[100, 1:46], pch=16, col="green")
+  points(namesnum, LogPred.out[1000, 1:46], pch=16, col="green")
   points(namesnum, LogPred.out[1, 1:46], pch=16, col="red")
-  points(namesnum, LogPred.out[800, 1:46], pch=16, col="lightblue")}
+  points(namesnum, LogPred.out[100, 1:46], pch=16, col="lightblue")}
   
 ```
 This parts formats the error by day/site info
@@ -657,7 +656,7 @@ This parts formats the error by day/site info
   ind <- apply(Pred.Log.out, 1, function(x) !any(is.na(x)))
   NoNA.pred <- Pred.Log.out[ind,]
   
-  NoNA.pred <- NoNA.pred[,c(9, 2, 1, 4)]
+  NoNA.pred <- NoNA.pred[,c(8, 2, 1, 4)]
   colnames(NoNA.pred) <- c("Obs", "Pred", "JulDay", "SiteName")
   
 
@@ -761,7 +760,7 @@ loops through and writes out the graphics
   for (i in 3:48)
     {
       
-      namey <- gsub(paste0("T", var, yrPath, "_"), "", colnames(net@data)[i])
+      namey <- gsub(paste0("T", var, "_", yrPath, "_"), "", colnames(net@data)[i])
       
       filename <- paste0(modelPath, "/graphics/", namer[i-2], ".png", sep="")
       png(filename=filename, res = 300, width = 1500, height = 1500, units = "px", bg="black")
@@ -779,7 +778,7 @@ loops through and writes out the graphics
       plot(net, col=fix3.colors, bg="black", fg="white")
       points(error_pts, pch=16, col="gray40", cex=cexEr)
       
-       legend("right", fill = attr(fix3.colors, "palette"), title=paste0("8-day ", var, " (°C)"),legend = c("0-6","6-8","8-10","10-12","12-14","14-16","16-18","18-20", "20-22", "22+"), bty = "n", cex=.5, inset=c(0,0), text.col="white");
+       legend("right", fill = attr(fix3.colors, "palette"), title=paste0("8-day ", longVar, " (°C)"),legend = c("0-6","6-8","8-10","10-12","12-14","14-16","16-18","18-20", "20-22", "22+"), bty = "n", cex=.5, inset=c(0,0), text.col="white");
         legend("bottomright", pch=16, col="gray40", pt.cex=c(0.5, 0.75, 1.0, 1.25), title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", cex=.5, inset=c(0,0), text.col="white");
         
       
@@ -802,7 +801,7 @@ This system call builds an mpeg out of the still graphics
 ```{r, message=FALSE, warning=FALSE}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Wen_2015_8D_Min.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Wen_2015_8D_Max.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
@@ -841,7 +840,7 @@ This part generates the project.rs.xml file
 Realizguid = UUIDgenerate(F)
 
 #now <- Sys.Date()
-now <- "2017-04-25"
+now <- "2017-02-16"
 ```
 Start writing project.rs.xml file here
 ```{r}
@@ -867,7 +866,7 @@ cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
   </Inputs>
 
   <Realizations>
-    <StreamTemperature guid=\"",Realizguid,"\" id=\"streamtemp\" dateCreated=\"",now,"\" productVersion=\"1.0\">
+    <StreamTemperature guid=",Realizguid," id=\"streamtemp\" dateCreated=\"",now,"\" productVersion=\"1.0\">
       <Name>Stream Temperature for ",nameBasin, " ",yearPath,"</Name>
 
       <MetaData>

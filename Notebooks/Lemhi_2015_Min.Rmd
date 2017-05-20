@@ -44,6 +44,7 @@ library(uuid)
   var <- "Min"
   longVar <- "Min"
   dataVar <- "Min8Day" #name of the variable in the logger data
+  capVar <- "MIN"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -864,7 +865,8 @@ This part generates the project.rs.xml file
 
 Realizguid = UUIDgenerate(F)
 
-now <- Sys.Date()
+#now <- Sys.Date()
+now <- "2017-05-16"
 
 ```
 Start writing project.rs.xml file here
@@ -877,13 +879,13 @@ cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
   xsi:noNamespaceSchemaLocation=\"https://raw.githubusercontent.com/Riverscapes/Program/master/Project/XSD/V1/Project.xsd\">
 
   <Name>stream_temperature_project</Name>
-  <ProjectType>STREAMTEMP</ProjectType>
+  <ProjectType>STREAMTEMP",capVar,"</ProjectType>
 
   <MetaData>
     <!--This first metadata exists only to place this project in the riverscapes project-->
     <Meta name=\"HUCID\">17060201</Meta>
 		<Meta name=\"Region\">CRB</Meta>
-    <Meta name=\"Watershed\">",longBasin,"</Meta>
+    <Meta name=\"Watershed\">",nameBasin,"</Meta>
   </MetaData>
 
   
