@@ -711,7 +711,7 @@ Geospatial data output
   error_pts <- spTransform(error_pts, proj4string(network))
   
   error_pts <- merge(error_pts, Error.pts.out, by.x="SiteName", by.y="SiteName")
-  network <- merge(network, LogPred.out, by.x = "RCAID", by.y = "RCAID")                    
+  network <- merge(network, Pred.in, by.x = "RCAID", by.y = "RCAID")                    
                     
   outnetname <- paste0(basin, "_", yearPath, "_8D_", var)
   outptsname <- paste0(basin, "_Error_", yearPath, "_8D_", var)
@@ -744,7 +744,7 @@ Animation output
     net = network[network$RCAID %in% rcaList,]
     
   names.out <- colnames(net@data[3:48])
-  namesnum <- as.numeric(gsub(paste0("T", var, yrPath, "_"), "", colnames(net@data[3:48])))
+  namesnum <- as.numeric(gsub(paste0("Tmn_",yrPath, "_"), "", colnames(net@data[3:48])))
   means <- colMeans(net@data[3:48], na.rm = TRUE)
   SDs <- colStdevs(net@data[3:48], na.rm = TRUE)
   yplus <- means + SDs
@@ -769,19 +769,19 @@ loops through and writes out the graphics
       fix3 <- classIntervals(net@data[,i], n = 11, style = "fixed",fixedBreaks=c(-1,2,4,6,8,10,12,14,16,18, 20))
       fix3.colors <- findColours(fix3,pal=seis)
       
-      cexEr <-ifelse(abs(error_pts@data[,i]) == 0, 0,
-                     ifelse(abs(error_pts@data[,i])>0 & error_pts@data[,i-1]<1, 0.5,
-                            ifelse(abs(error_pts@data[,i])>1 & error_pts@data[,i-1]<2, 0.75,
-                                   ifelse(abs(error_pts@data[,i])>2 & error_pts@data[,i]<3, 1.0,
-                                          ifelse(abs(error_pts@data[,i])>3, 1.25,
-                                                 ifelse(abs(error_pts@data[,i])== NA, 0, NA))))))
-      
+      # cexEr <-ifelse(abs(error_pts@data[,i]) == 0, 0,
+      #                ifelse(abs(error_pts@data[,i])>0 & error_pts@data[,i-1]<1, 0.5,
+      #                       ifelse(abs(error_pts@data[,i])>1 & error_pts@data[,i-1]<2, 0.75,
+      #                              ifelse(abs(error_pts@data[,i])>2 & error_pts@data[,i]<3, 1.0,
+      #                                     ifelse(abs(error_pts@data[,i])>3, 1.25,
+      #                                            ifelse(abs(error_pts@data[,i])== NA, 0, NA))))))
+      # 
       plot(net, col=fix3.colors, bg="black", fg="white")
-      points(error_pts, pch=16, col="gray40", cex=cexEr)
+      # points(error_pts, pch=16, col="gray40", cex=cexEr)
       
        legend("right", fill = attr(fix3.colors, "palette"), title=paste0("8-day ", longVar, " (°C)"),legend = c("0-6","6-8","8-10","10-12","12-14","14-16","16-18","18-20", "20-22", "22+"), bty = "n", cex=.5, inset=c(0,0), text.col="white");
-        legend("bottomright", pch=16, col="gray40", pt.cex=c(0.5, 0.75, 1.0, 1.25), title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", cex=.5, inset=c(0,0), text.col="white");
-        
+        # legend("bottomright", pch=16, col="gray40", pt.cex=c(0.5, 0.75, 1.0, 1.25), title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", cex=.5, inset=c(0,0), text.col="white");
+        # 
       
       
       title(paste0(longBasin, " 8-day ", var, " ", yearPath, " (°C)"), line=-0.6, adj=0, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5)
@@ -802,7 +802,7 @@ This system call builds an mpeg out of the still graphics
 ```{r, message=FALSE, warning=FALSE}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Wen_2014_8D_Min.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Wen_2014_8D_Mn.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
