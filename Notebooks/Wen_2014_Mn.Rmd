@@ -1,5 +1,5 @@
 ---
-title: "Wenatchee 2014 Min"
+title: "Wenatchee 2014 Mean"
 output: html_notebook
 ---
 
@@ -35,18 +35,18 @@ library(classInt)
   yrPath <- "14"
   yearPath <- "2014"
   
-  nameBasin <- "Wenatchee" #this is from the Projects XML list of approved names
+  nameBasin <- "Wenatchee"
   
-  dataPath <- "D:/OneDrive/work/research/CHaMP/GIS/LST/LST_s1_"
+  dataPath <- "D:/OneDrive/work/GIS/8_day_1km_LST/LST_s12_"
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Min"
-  longVar <- "Min"
-  dataVar <- "Min8Day" #name of the variable in the logger data
-  capVar <- "MIN"
+  var <- "Mn"
+  longVar <- "Mean"
+  dataVar <- "Mn8Day" #name of the variable in the logger data
+  capVar <- "MEAN"
   
-  modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/Min/")
+  modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/Mean/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
   
 ```
@@ -56,7 +56,7 @@ This part reads the LST data and gap-fills using a cubic spline function
 
   
   
-  LST.in <- read.dbf(paste0(dataPath, yearPath, "/", basin, "_", yrPath, "_LST.dbf"))
+  LST.in <- read.dbf(paste0(gisPath, "/", midBasin, "/", basin, "_", yrPath, "_LST.dbf"))
   PointID <- LST.in[,1]
   LST.in <- LST.in[,2:47]
   LST.in[LST.in<0.1] = NA
@@ -126,9 +126,8 @@ This part calculates the zonal mean of the daily LST for each RCA
 out_Preds <- read.dbf(paste0(mainPath, longBasin, "/", "LST", yrPath, "_", basin, "_interp.dbf"))
   
   
-  weights <- read.dbf(paste0(mainPath, "/", longBasin, "/", basin, "_rca_area_wgts.dbf"))
+  weights <- read.csv(paste0(mainPath, "/", longBasin, "/", basin, "_rca_area_wgts.csv"), stringsAsFactors=FALSE)
   weights[weights$area_wgt<0.01, "area_wgt"] = 0.01
-  colnames(weights)[1:2] <- c("RCAID", "GRIDCODE")
   
   rcas <- unique(unlist(weights$RCAID))
   rca_zonal <- matrix(ncol=46, nrow=length(rcas))
@@ -199,9 +198,11 @@ Model building
   ind <- apply(LST.Log.out, 1, function(x) !any(is.na(x)))
   NoNA.xyz <- LST.Log.out[ind,]
   
-  NoNA.xyz <- NoNA.xyz[,c(16, 2, 1, 3, 7)]
+  NoNA.xyz <- NoNA.xyz[,c("Avg8DayAvg", "LST", "JulDay", "Elev", "SiteName")]
   colnames(NoNA.xyz) <- c("y", "x", "z", "e", "SiteName")
-  
+```
+write it out
+```{r}
   write.csv(x=NoNA.xyz, file= paste0(basin, "_", yearPath, "_8Day_", var, "_model_data.csv"), row.names = FALSE)
   
   NoNA.xyz <- orderBy(~z, NoNA.xyz)
@@ -562,7 +563,7 @@ This part applies the model coefficients to the LST to generate 8-day temp estim
   elev.in <- read.csv(paste0(mainPath, longBasin, "/", basin, "_rca_elev.csv"), stringsAsFactors = F)
   colnames(elev.in)[1] <- "RCAID"
   
-  LST.in <- read.csv(paste0(mainPath, longBasin, "/", "LST", yrPath, "_", basin, "_RCA.csv"), stringsAsFactors = FALSE)
+  LST.in <- read.csv(paste0(mainPath, longBasin, "/", "LST", yrPath, "_", basin, "_RCA.cav"), stringsAsFactors = FALSE)
   
   colnames(LST.in)<-gsub("X", "", colnames(LST.in))
   
@@ -657,7 +658,7 @@ This parts formats the error by day/site info
   ind <- apply(Pred.Log.out, 1, function(x) !any(is.na(x)))
   NoNA.pred <- Pred.Log.out[ind,]
   
-  NoNA.pred <- NoNA.pred[,c(15, 2, 1, 6)]
+  NoNA.pred <- NoNA.pred[,c(14, 2, 1, 6)]
   colnames(NoNA.pred) <- c("Obs", "Pred", "JulDay", "SiteName")
   
 
@@ -761,7 +762,7 @@ loops through and writes out the graphics
   for (i in 3:48)
     {
       
-      namey <- gsub(paste0("T", var, yrPath, "_"), "", colnames(net@data)[i])
+      namey <- gsub(paste0("T", var, "_", yrPath, "_"), "", colnames(net@data)[i])
       
       filename <- paste0(modelPath, "/graphics/", namer[i-2], ".png", sep="")
       png(filename=filename, res = 300, width = 1500, height = 1500, units = "px", bg="black")
@@ -802,14 +803,14 @@ This system call builds an mpeg out of the still graphics
 ```{r, message=FALSE, warning=FALSE}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Wen_2014_8D_Min.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Wen_2014_8D_Max.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
   i <- 22  
   namey <- gsub(paste0("T", var, "_", yrPath, "_"), "", colnames(net@data)[i])
-  # fix3 <- classIntervals(net@data[,i], n = 11, style = "fixed",fixedBreaks=c(-1,6,8,10,12,14,16,18,20,22,24))
-  # fix3.colors <- findColours(fix3,pal=seis)
+  fix3 <- classIntervals(net@data[,i], n = 11, style = "fixed",fixedBreaks=c(-1,6,8,10,12,14,16,18,20,22,24))
+  fix3.colors <- findColours(fix3,pal=seis)
   
   filename <- paste0(modelPath, "/graphics/Stills/", basin, "_", yearPath, "_8D_", var, ".png", sep="")
     png(filename=filename, res = 300, width = 1500, height = 1500, units = "px", bg="white")
@@ -841,7 +842,7 @@ This part generates the project.rs.xml file
 Realizguid = UUIDgenerate(F)
 
 #now <- Sys.Date()
-now <- "2017-04-25"
+now <- "2017-05-03"
 
 ```
 Start writing project.rs.xml file here
