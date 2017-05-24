@@ -1,11 +1,11 @@
 ---
-title: "Wenatchee 2013 Min"
+title: "Wenatchee 2013 Max"
 output: html_notebook
 ---
 
 This set of R scripts processes logger data for predictive stream temperature modeling
 Created: 21 Feb 2017
-Updated: 25 Apr 2017
+Updated: 26 Apr 2017
 
 
 Stage setting:
@@ -36,16 +36,16 @@ library(classInt)
   yearPath <- "2013"
   
   nameBasin <- "Wenatchee" #this is from the Projects XML list of approved names
-  
+ 
   dataPath <- "D:/OneDrive/work/research/CHaMP/GIS/LST/LST_s1_"
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
-  var <- "Min"
-  longVar <- "Min"
-  dataVar <- "Min8Day" #name of the variable in the logger data
-  capVar <- "MIN"
+  var <- "Mx"
+  longVar <- "Max"
+  dataVar <- "Max8Day" #name of the variable in the logger data
+  capVar <- "MAX"
   
-  modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/Min/")
+  modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
   
 ```
@@ -198,7 +198,7 @@ Model building
   ind <- apply(LST.Log.out, 1, function(x) !any(is.na(x)))
   NoNA.xyz <- LST.Log.out[ind,]
   
-  NoNA.xyz <- NoNA.xyz[,c(16, 2, 1, 3, 7)]
+  NoNA.xyz <- NoNA.xyz[,c(15, 2, 1, 3, 7)]
   colnames(NoNA.xyz) <- c("y", "x", "z", "e", "SiteName")
   
   write.csv(x=NoNA.xyz, file= paste0(basin, "_", yearPath, "_8Day_", var, "_model_data.csv"), row.names = FALSE)
@@ -363,7 +363,7 @@ plot model diagnostics
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(%##%), ])
+  mod <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(342,344,366,367), ])
 ```
 recheck for outliers
 ```{r}
@@ -381,13 +381,14 @@ more tests: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(%##%), ]
+  data.sp <- data.sp[-c(342,344,366,367), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
   e <- data.sp$e
   mod <- lm(y ~ x + I(x^2) + z + e)
   sum_mod <- summary(mod)
+  sum_mod
 ```
 format the data for prediction output 
 ```{r}
@@ -613,8 +614,8 @@ This part applies the model coefficients to the LST to generate 8-day temp estim
 ```
 Plot some reaches to take a peek
 ```{r}  
-  {plot(namesnum, LogPred.out[800,1:46])
-  points(namesnum, LogPred.out[10, 1:46], pch=16, col="blue")
+  {plot(namesnum, LogPred.out[252,1:46])
+  points(namesnum, LogPred.out[800, 1:46], pch=16, col="blue")
   points(namesnum, LogPred.out[1000, 1:46], pch=16, col="green")
   points(namesnum, LogPred.out[1, 1:46], pch=16, col="red")
   points(namesnum, LogPred.out[100, 1:46], pch=16, col="lightblue")}
@@ -656,7 +657,7 @@ This parts formats the error by day/site info
   ind <- apply(Pred.Log.out, 1, function(x) !any(is.na(x)))
   NoNA.pred <- Pred.Log.out[ind,]
   
-  NoNA.pred <- NoNA.pred[,c(15, 2, 1, 6)]
+  NoNA.pred <- NoNA.pred[,c(14, 2, 1, 6)]
   colnames(NoNA.pred) <- c("Obs", "Pred", "JulDay", "SiteName")
   
 
@@ -801,7 +802,7 @@ This system call builds an mpeg out of the still graphics
 ```{r, message=FALSE, warning=FALSE}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Wen_2013_8D_Min.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Wen_2013_8D_Max.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}

@@ -1,5 +1,5 @@
 ---
-title: "Wenatchee 2013 Min"
+title: "Yankee Fork 2013 Mean"
 output: html_notebook
 ---
 
@@ -29,23 +29,23 @@ library(raster)
 library(RColorBrewer)
 library(classInt)
 
-  basin <- "Wen"
-  midBasin <- "Wenatchee"
-  longBasin <- "Wenatchee"
+  basin <- "YF"
+  midBasin <- "YankeeFork"
+  longBasin <- "YankeeFork"
   yrPath <- "13"
   yearPath <- "2013"
   
-  nameBasin <- "Wenatchee" #this is from the Projects XML list of approved names
+  nameBasin <- "Yankee Fork" #this is from the Projects XML list of approved names
   
   dataPath <- "D:/OneDrive/work/research/CHaMP/GIS/LST/LST_s1_"
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
-  var <- "Min"
-  longVar <- "Min"
-  dataVar <- "Min8Day" #name of the variable in the logger data
-  capVar <- "MIN"
+  var <- "Mn"
+  longVar <- "Mean"
+  dataVar <- "Mn8Day" #name of the variable in the logger data
+  capVar <- "MEAN"
   
-  modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/Min/")
+  modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar)
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
   
 ```
@@ -801,7 +801,7 @@ This system call builds an mpeg out of the still graphics
 ```{r, message=FALSE, warning=FALSE}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Wen_2013_8D_Min.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png YF_2013_8D_Mn.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
@@ -840,7 +840,7 @@ This part generates the project.rs.xml file
 Realizguid = UUIDgenerate(F)
 
 #now <- Sys.Date()
-now <- "2017-04-26"
+now <- "2016-10-19"
 
 ```
 Start writing project.rs.xml file here

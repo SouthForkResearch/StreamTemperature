@@ -36,18 +36,21 @@ library(uuid)
   longBasin <- "Asotin"
   yrPath <- "14"
   yearPath <- "2014"
+  nameBasin <- "Asotin" #this is from the Projects XML list of approved names
   
+ 
   dataPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   
   var <- "Mn"
   longVar <- "Mean"
+    dataVar <- "Mn8Day" #name of the variable in the logger data
+  capVar <- "MEAN"
   
-  modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", var, "/")
+  modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
   
  
-```
 ```
 Logger prediction modeling part
 Formats the data in preperation for building models
@@ -382,7 +385,7 @@ write.dbf(LogPred.out, file = paste0("predt", yearPath, "_", basin, "_8D_Mn.dbf"
 # This parts formats the error by day/site info
 ```{r}
 
-  NoNA.xyz <- read.csv(paste0(basin, "_", yearPath, "_8Day_model_data.csv"), stringsAsFactors = TRUE)
+  NoNA.xyz <- read.csv(paste0(basin, "_", yearPath, "_8Day_model_data.csv"), stringsAsFactors = FALSE)
   NoNA.xyz <- orderBy(~z, NoNA.xyz)
   maxrow <- which.max(NoNA.xyz$y)
   data.sp <- NoNA.xyz[1:(maxrow-1),]
@@ -411,6 +414,7 @@ write.dbf(LogPred.out, file = paste0("predt", yearPath, "_", basin, "_8D_Mn.dbf"
   SiteID <- as.matrix(SiteID)
   Error.pts.out <- matrix(nrow = length(SiteID), ncol = 47)
   
+  namesnum <- as.numeric(colnames(LogPred.out[1:46]))
   errorName <- paste0("JulDay_", namesnum)
   colnames(Error.pts.out)[2:47] <- errorName
   colnames(Error.pts.out)[1] <- "SiteName"
@@ -438,8 +442,8 @@ write.dbf(LogPred.out, file = paste0("predt", yearPath, "_", basin, "_8D_Mn.dbf"
   
   Error.pts.out[,2:47] <- round(Error.pts.out[,2:47], digits=3)
 
-write.dbf(Error.pts.out, file = paste0("Error", yearPath, "_", basin, "_8D_Mn.dbf")) 
-write.csv(Error.pts.out, file = paste0("Error", yearPath, "_", basin, "_8D_Mn.csv"))
+write.dbf(Error.pts.out, file = paste0("Error_", yearPath, "_", basin, "_8D_Mn.dbf")) 
+write.csv(Error.pts.out, file = paste0("Error_", yearPath, "_", basin, "_8D_Mn.csv"))
 #####Join this output to the point coverage
 
 ```
@@ -554,6 +558,7 @@ This part generates the project.rs.xml file
 Realizguid = UUIDgenerate(F)
 
 now <- Sys.Date()
+now <- "2016-10-10"
 
 ```
 Start writing project.rs.xml file here
@@ -563,16 +568,16 @@ cat("", file=paste(modelPath,"project.rs.xml",sep=""))
 
 cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
 <Project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
-  xsi:noNamespaceSchemaLocation=\"XSD/V1/Project.xsd\">
+  xsi:noNamespaceSchemaLocation=\"https://raw.githubusercontent.com/Riverscapes/Program/master/Project/XSD/V1/Project.xsd\">
 
   <Name>stream_temperature_project</Name>
-  <ProjectType>STREAMTEMP</ProjectType>
+  <ProjectType>STREAMTEMP",capVar,"</ProjectType>
 
   <MetaData>
     <!--This first metadata exists only to place this project in the riverscapes project-->
     <Meta name=\"HUCID\">17060201</Meta>
 		<Meta name=\"Region\">CRB</Meta>
-    <Meta name=\"Watershed\">",longBasin,"</Meta>
+    <Meta name=\"Watershed\">",nameBasin,"</Meta>
   </MetaData>
 
   
@@ -580,7 +585,7 @@ cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
   </Inputs>
 
   <Realizations>
-    <StreamTemperature guid=",Realizguid," id=\"streamtemp\" dateCreated=\"",now,"\" productVersion=\"1.0\">
+    <StreamTemperature guid=\"",Realizguid,"\" id=\"streamtemp\" dateCreated=\"",now,"\" productVersion=\"1.0\">
       <Name>Stream Temperature for ",nameBasin, " ",yearPath,"</Name>
 
       <MetaData>
