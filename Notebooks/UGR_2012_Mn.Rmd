@@ -1,5 +1,5 @@
 ---
-title: "Upper Grand Ronde 2013"
+title: "Upper Grand Ronde 2012"
 output: html_notebook
 ---
 
@@ -28,18 +28,26 @@ library(rgdal)
 library(raster)
 library(RColorBrewer)
 library(classInt)
+library(uuid)
 
  basin <- "UGR"
   midBasin <- "Grand_Ronde"
   longBasin <- "UpperGrandRonde"
-  yrPath <- "13"
-  yearPath <- "2013"
+  yrPath <- "12"
+  yearPath <- "2012"
+  
+  nameBasin <- "Upper Grande Ronde" #this is from the Projects XML list of approved names
+    
   dataPath <- "D:/OneDrive/work/research/CHaMP/GIS/LST/LST_s1_"
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
+  
   var <- "Mn"
+  longVar <- "Mean"
+  dataVar <- "Mn8D" #name of the variable in the logger data
+  capVar <- "MEAN"
 
- 
+  modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
   
 ```
@@ -177,8 +185,8 @@ Logger data formatting
 
   
   LST.in <- read.dbf(paste0("../", "LST", yrPath, "_", basin, "_RCA.dbf"))
-  colnames(LST.in)<-gsub("X", "", colnames(LST.in))
-  newnamesnum <- as.numeric(colnames(LST.in)[1:46]);
+  colnames(LST.in)<-gsub("X12", "", colnames(LST.in))
+  newnamesnum <- as.numeric(colnames(LST.in)[2:47]);
   
   LST.Log.out <- data.frame (mup = NULL)
   SiteID <- unique(Log.in$SiteName)
@@ -207,7 +215,7 @@ Logger data formatting
   ind <- apply(LST.Log.out, 1, function(x) !any(is.na(x)))
   NoNA.xyz <- LST.Log.out[ind,]
   
-  NoNA.xyz <- NoNA.xyz[,c(9, 2, 1, 3, 4)]
+  NoNA.xyz <- NoNA.xyz[,c(8, 2, 1, 3, 4)]
   colnames(NoNA.xyz) <- c("y", "x", "z", "e", "SiteName")
   
   write.csv(x=NoNA.xyz, file= paste0(basin, "_", yearPath, "_8Day_", var, "_model_data.csv"), row.names = FALSE)
@@ -292,6 +300,7 @@ plot(mod)
   
   summary(fit)
 ```
+Output tables formatting for coeffs and metrics
 ```{r}    
   coeffs_out <- data.frame(Int=numeric(2), bLST=numeric(2), bLST2=numeric(2), bJul=numeric(2), bElev=numeric(2))
   metrics_out <- data.frame(r2=numeric(2), RMSE=numeric(2), p2=numeric(2), RMSEP=numeric(2), N_Sites=numeric(2), N=numeric(2))
@@ -373,7 +382,7 @@ plot model diagnostics
 ```
 rerun w/o outliers
 ```{r}
-  mod2 <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(1116,1130,1405,1410,1404,1324,1346,1112,1156,1147,1488,1115,1313,1332,1330,1345,1341,1342,1384), ])
+  mod2 <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(1), ])
 ```
 recheck for outliers
 ```{r}
@@ -391,7 +400,7 @@ more tests: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(1116,1130,1405,1410,1404,1324,1346,1112,1156,1147,1488,1115,1313,1332,1330,1345,1341,1342,1384), ]
+  data.sp <- data.sp[-c(%holder for IDs%), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -554,9 +563,9 @@ write out predicted, coeffs, & metrics
   metrics_out[2,6] <- length(y)
 
   
-  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=T)
+  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=NA)
   
-  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=T)
+  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=NA)
   
   write.table(x=metrics_out, append=F,row.names=T, file = paste0(metricPath, yearPath, "_temp_CHaMP/model_metrics/","All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=NA)
 ```
@@ -582,9 +591,9 @@ This part applies the model coefficients to the LST to generate 8-day temp estim
   
   LST.in <- read.dbf(paste0(mainPath, longBasin, "/", "LST", yrPath, "_", basin, "_RCA.dbf"))
   
-  colnames(LST.in)<-gsub("X", "", colnames(LST.in))
+  colnames(LST.in)<-gsub("X12", "", colnames(LST.in))
   
-  newnamesnum <- as.numeric(colnames(LST.in)[1:46])
+  newnamesnum <- as.numeric(colnames(LST.in)[2:47])
   
   LST.elev <- merge(LST.in, elev.in, by = "RCAID")
   
@@ -678,7 +687,7 @@ This parts formats the error by day/site info
   ind <- apply(Pred.Log.out, 1, function(x) !any(is.na(x)))
   NoNA.pred <- Pred.Log.out[ind,]
   
-  NoNA.pred <- NoNA.pred[,c(8, 2, 1, 3)]
+  NoNA.pred <- NoNA.pred[,c(7, 2, 1, 3)]
   colnames(NoNA.pred) <- c("Obs", "Pred", "JulDay", "SiteName")
   
   
@@ -759,7 +768,7 @@ Animation output
   df <- data.frame(means=means, SDs=SDs, names=namesnum)
   sequ <- c(1:46)
   namer <- sprintf('%03d', sequ)
-  fix4 <- classIntervals(means, n = 10, style = "fixed",fixedBreaks=c(-1,4,6,8,10,12,14,16,18))
+  fix4 <- classIntervals(means, n = 10, style = "fixed",fixedBreaks=c(-1,4,8,10,12,14,16,18,20,22))
   fix4.colors <- findColours(fix4,pal=seis)
   
   for (i in 3:48)
@@ -767,10 +776,10 @@ Animation output
       
       namey <- gsub(paste0("T", var, "_", yrPath, "_"), "", colnames(network@data)[i])
       
-      filename <- paste0(modelPath, "/graphics/", namer[i-2], ".png", sep="")
+      filename <- paste0(modelPath, "graphics/", namer[i-2], ".png", sep="")
       png(filename=filename, res = 300, width = 1500, height = 1500, units = "px", bg="black")
       
-      fix3 <- classIntervals(network@data[,i], n = 11, style = "fixed",fixedBreaks=c(2,4,6,8,10,12,14,16,18, 20,22))
+      fix3 <- classIntervals(network@data[,i], n = 11, style = "fixed",fixedBreaks=c(-1,4,8,10,12,14,16,18, 20,22,24,30))
       fix3.colors <- findColours(fix3,pal=seis)
       
       cexEr <-ifelse(abs(error_pts@data[,i]) == 0, 0,
@@ -783,11 +792,11 @@ Animation output
       plot(network, col=fix3.colors, bg="black", fg="white")
       points(error_pts, pch=16, col="gray40", cex=cexEr)
       
-      legend("topright", fill = attr(fix3.colors, "palette"), legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, inset=c(.05,0.1), text.col="white");
+      legend("topright", fill = attr(fix3.colors, "palette"), legend = c("0-4","4-8","8-10","10-12","12-14","14-16","16-18","18-20","20-22","22+"), bty = "n", cex=.5, inset=c(.05,0.1), text.col="white");
       legend("topright", pch=16, col="gray40", pt.cex=c(0.5, 0.75, 1.0, 1.25), title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", cex=.5, inset=c(0.05,0.5), text.col="white");
       
       
-      title(paste0(longBasin, " 8-day ", var, " ", yearPath, " (°C)"), line=-0.6, adj=1, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5)
+      title(paste0(longBasin, " 8-day ", var, " ", yearPath, " (°C)"), line=-0.5, adj=1, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5)
       mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-5, col="white", cex=.5)
       tmp2 <- subplot(
         plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
@@ -805,7 +814,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png UGR_2013_8D_mn.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png UGR_2012_8D_mn.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
@@ -837,4 +846,131 @@ Still graphic output for wiki or web or wev
           y=grconvertY(c(0.80,0.95), from='npc'),
           size=c(1,1.5), vadj=0.5, hadj=0.5, 
           pars=list( mar=c(0,0,0,0)+0.1, cex=0.5))
+```
+This part generates the project.rs.xml file 
+```{r, message=FALSE}
+
+Realizguid = UUIDgenerate(F)
+
+#now <- Sys.Date()
+now <- "2017-03-31"
+
+```
+Start writing project.rs.xml file here
+```{r}
+
+cat("", file=paste(modelPath,"project.rs.xml",sep=""))
+
+cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
+<Project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
+  xsi:noNamespaceSchemaLocation=\"https://raw.githubusercontent.com/Riverscapes/Program/master/Project/XSD/V1/Project.xsd\">
+
+  <Name>stream_temperature_project</Name>
+  <ProjectType>STREAMTEMP",capVar,"</ProjectType>
+
+  <MetaData>
+    <!--This first metadata exists only to place this project in the riverscapes project-->
+    <Meta name=\"HUCID\">17060201</Meta>
+		<Meta name=\"Region\">CRB</Meta>
+    <Meta name=\"Watershed\">",nameBasin,"</Meta>
+  </MetaData>
+
+  
+  <Inputs>
+  </Inputs>
+
+  <Realizations>
+    <StreamTemperature guid=\"",Realizguid,"\" id=\"streamtemp\" dateCreated=\"",now,"\" productVersion=\"1.0\">
+      <Name>Stream Temperature for ",nameBasin, " ",yearPath,"</Name>
+
+      <MetaData>
+        <!--This next metadata relates to this particular realization-->
+        <Meta name=\"MODIS_dataset\">MOD11A2v005</Meta>
+        <Meta name=\"EOSDIS\">https://reverb.echo.nasa.gov/reverb/</Meta>
+        <Meta name=\"Logger_data_source\">www.champmonitoring.org</Meta>
+        <Meta name=\"Code_wiki\">https://github.com/SouthForkResearch/StreamTemperature/wiki</Meta>
+      </MetaData>
+
+      <Analyses>
+        <Analysis>
+          <Name>Stream Temp Analysis</Name>
+          <Outputs>
+
+            <CSV id=\"coeffs\">
+              <Name>Model_coefficients</Name>
+              <Path>All_data_",basin,"_",yearPath,"_mod_coeffs_",var,".csv</Path>
+              <MetaData>
+                <Meta name=\"description\">Parameter coefficients for the final model</Meta>
+              </MetaData>
+            </CSV>
+
+            <CSV id=\"metrics\">
+              <Name>Model_metrics</Name>
+              <Path>All_data_",basin,"_",yearPath,"_mod_metrics_",var,".csv</Path>
+              <MetaData>
+                <Meta name=\"description\">Model quality metrics</Meta>
+              </MetaData>
+            </CSV>
+
+            <CSV id=\"error\">
+              <Name>Model_error</Name>
+              <Path>Error_",basin,"_",yearPath,"_8D_",var,".csv</Path>
+              <MetaData>
+                <Meta name=\"description\">Model estimation error for each 8-day period by site</Meta>
+              </MetaData>
+            </CSV>
+
+            <CSV id=\"estimates\">
+              <Name>Model_data_prediction</Name>
+              <Path>jk_pred_v_y_",var, "_", basin,"_",yearPath,"_sp_fall.csv</Path>
+              <MetaData>
+                <Meta name=\"description\">Jack-knifed temperature estimate for each 8-day logger input</Meta>
+              </MetaData>
+            </CSV>
+
+            <CSV id=\"modelData\">
+              <Name>Model_input_data</Name>
+              <Path>", basin,"_",yearPath,"_8Day_",var,"_model_data.csv</Path>
+              <MetaData>
+                <Meta name=\"description\">Formatted input data used in the model</Meta>
+              </MetaData>
+            </CSV>
+          
+            <Image id=\"still\">
+              <Name>Network_estimate_snapshot</Name>
+              <Path>graphics/Stills/",basin,"_",yearPath,"_8D_",var,".png</Path>
+              <MetaData>
+                <Meta name=\"description\">Still image of estimated temperature and error-by-site on the network for one day</Meta>
+              </MetaData>
+            </Image>
+
+            <Video id=\"movie\">
+              <Name>Network_annual_estimate_animation</Name>
+              <Path>graphics/",basin,"_",yearPath,"_8D_",var,".mpeg</Path>
+            </Video>
+
+            <Vector id=\"network\">
+              <Name>Network_estimate_shapefile</Name>
+              <Path>",basin,"_",yearPath,"_8D_",var,".shp</Path>
+              <MetaData>
+                <Meta name=\"description\">Shapefile of network with temperature estimates for each 8-day period</Meta>
+              </MetaData>
+            </Vector>
+
+            <Vector id=\"errorPts\">
+              <Name>Error_by_site_points</Name>
+              <Path>",basin,"_Error_",yearPath,"_8D_",var,".shp</Path>
+              <MetaData>
+                <Meta name=\"description\">Point shapefile of all included sites with model estimation error</Meta>
+              </MetaData>
+            </Vector>
+
+          </Outputs>
+        </Analysis>
+      </Analyses>
+    </StreamTemperature>
+  </Realizations>
+</Project>
+",sep=""), file=paste(modelPath,"project.rs.xml",sep=""), append=T)
+
 ```

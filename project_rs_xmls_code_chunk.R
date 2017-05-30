@@ -19,13 +19,14 @@ cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
           xsi:noNamespaceSchemaLocation=\"https://raw.githubusercontent.com/Riverscapes/Program/master/Project/XSD/V1/Project.xsd\">
           
           <Name>stream_temperature_project</Name>
-          <ProjectType>STREAMTEMP</ProjectType>
+          <ProjectType>STREAMTEMP",capVar,"</ProjectType>
           
           <MetaData>
           <!--This first metadata exists only to place this project in the riverscapes project-->
           <Meta name=\"HUCID\">17060201</Meta>
           <Meta name=\"Region\">CRB</Meta>
-          <Meta name=\"Watershed\">",longBasin,"</Meta>
+          <Meta name=\"Watershed\">", nameBasin,"</Meta>
+          <Meta name=\"Year\">", yearPath,"</Meta>
           </MetaData>
           
           
