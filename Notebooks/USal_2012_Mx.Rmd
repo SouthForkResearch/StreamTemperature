@@ -46,7 +46,7 @@ library(uuid)
   dataVar <- "Mx8D" #name of the variable in the logger data
   capVar <- "MAX"
   
-  modelPath <- paste0(mainPath, "EP_Temp/", longBasin, "/", yearPath, "/")
+  modelPath <- paste0(mainPath, "EP_Temp/", longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
   
 ```
@@ -876,6 +876,7 @@ cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
     <Meta name=\"HUCID\">17060201</Meta>
 		<Meta name=\"Region\">CRB</Meta>
     <Meta name=\"Watershed\">",nameBasin,"</Meta>
+    <Meta name=\"Year\">", yearPath,"</Meta>
   </MetaData>
 
   

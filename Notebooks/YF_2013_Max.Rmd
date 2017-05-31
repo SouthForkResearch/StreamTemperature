@@ -28,6 +28,7 @@ library(rgdal)
 library(raster)
 library(RColorBrewer)
 library(classInt)
+library(uuid)
 
   basin <- "YF"
   midBasin <- "YankeeFork"
@@ -908,6 +909,7 @@ cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
     <Meta name=\"HUCID\">17060201</Meta>
 		<Meta name=\"Region\">CRB</Meta>
     <Meta name=\"Watershed\">",nameBasin,"</Meta>
+     <Meta name=\"Year\">", yearPath,"</Meta>
   </MetaData>
 
   

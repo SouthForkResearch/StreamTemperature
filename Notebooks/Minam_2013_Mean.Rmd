@@ -35,7 +35,7 @@ library(uuid)
   yrPath <- "13"
   yearPath <- "2013"
   
-  nameBasin <- "Wallowa" #this is from the Projects XML list of approved names
+  nameBasin <- "Minam" #this is from the Projects XML list of approved names
   
   dataPath <- "D:/OneDrive/work/GIS/8_day_1km_LST/LST_s12_"
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
@@ -44,6 +44,7 @@ library(uuid)
   var <- "Mn"
   longVar <- "Mean"
   dataVar <- "X8DayMn" #name of the variable in the logger data
+  capVar <- "MEAN"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -894,6 +895,7 @@ This part generates the project.rs.xml file
 Realizguid = UUIDgenerate(F)
 
 now <- Sys.Date()
+now <- "2015-07-08"
 
 ```
 Start writing project.rs.xml file here
@@ -906,14 +908,15 @@ cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
   xsi:noNamespaceSchemaLocation=\"https://raw.githubusercontent.com/Riverscapes/Program/master/Project/XSD/V1/Project.xsd\">
 
   <Name>stream_temperature_project</Name>
-  <ProjectType>STREAMTEMP</ProjectType>
-
-  <MetaData>
+  <ProjectType>STREAMTEMP",capVar,"</ProjectType>
+          
+    <MetaData>
     <!--This first metadata exists only to place this project in the riverscapes project-->
     <Meta name=\"HUCID\">17060201</Meta>
-		<Meta name=\"Region\">CRB</Meta>
-    <Meta name=\"Watershed\">",longBasin,"</Meta>
-  </MetaData>
+    <Meta name=\"Region\">CRB</Meta>
+    <Meta name=\"Watershed\">", nameBasin,"</Meta>
+    <Meta name=\"Year\">", yearPath,"</Meta>
+    </MetaData>
 
   
   <Inputs>

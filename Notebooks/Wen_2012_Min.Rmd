@@ -47,7 +47,7 @@ library(uuid)
   dataVar <- "X8DayMin" #name of the variable in the logger data
   capVar <- "MIN"
   
-  modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/Min/")
+  modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
   
 ```
@@ -847,7 +847,7 @@ now <- "2017-04-26"
 Start writing project.rs.xml file here
 ```{r}
 
-cat("", file="project.rs.xml",sep="")
+cat("", file=paste(modelPath,"project.rs.xml",sep=""))
 
 cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
 <Project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
@@ -861,6 +861,7 @@ cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
     <Meta name=\"HUCID\">17060201</Meta>
 		<Meta name=\"Region\">CRB</Meta>
     <Meta name=\"Watershed\">",nameBasin,"</Meta>
+     <Meta name=\"Year\">", yearPath,"</Meta>
   </MetaData>
 
   
@@ -868,7 +869,7 @@ cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
   </Inputs>
 
   <Realizations>
-    <StreamTemperature guid=",Realizguid," id=\"streamtemp\" dateCreated=\"",now,"\" productVersion=\"1.0\">
+    <StreamTemperature guid=\"",Realizguid,"\" id=\"streamtemp\" dateCreated=\"",now,"\" productVersion=\"1.0\">
       <Name>Stream Temperature for ",nameBasin, " ",yearPath,"</Name>
 
       <MetaData>
