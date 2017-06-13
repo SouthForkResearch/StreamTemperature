@@ -644,7 +644,7 @@ This parts formats the error by day/site info
         
         Pred.site <- matrix(ncol=2, nrow=46)
         Pred.site[,1] <- as.numeric(unlist(colnames(Pred.in)[1:46]))
-        Pred.site[,2] <- unlist(Pred.in[RCAID,1:46])
+        Pred.site[,2] <- unlist(Pred.in[Pred.in$RCAID == RCAID,1:46])
         Pred.site <- data.frame(Pred.site)
         colnames(Pred.site) <- c("JulDay", "Pred")
         
