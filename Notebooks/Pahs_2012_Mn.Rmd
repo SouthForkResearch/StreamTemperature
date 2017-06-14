@@ -566,9 +566,9 @@ This parts formats the error by day/site info
 ```{r}
   
   Log.in <- read.csv(paste0(basin, "_", yearPath, "_CBS_NorWeST_8Day_", var, ".csv"), stringsAsFactors = FALSE)
+  varName <- paste0("T", var, yrPath)
 
-
-  ID.in <- read.csv(paste0("../../", basin, "_sites_rca_elev.csv"), stringsAsFactors = FALSE) 
+  ID.in <- read.csv(paste0("../../", longBasin, "_sites_rca_elev.csv"), stringsAsFactors = FALSE) 
   colnames(ID.in)[1] <- "SiteID"
   
   Pred.in <- read.dbf(paste0("predt", yearPath, "_", basin, "_8D_", var, ".dbf"))
@@ -589,7 +589,7 @@ This parts formats the error by day/site info
       
       Pred.site <- matrix(ncol=2, nrow=46)
       Pred.site[,1] <- as.numeric(unlist(colnames(Pred.in)[1:46]))
-      Pred.site[,2] <- unlist(Pred.in[RCAID,1:46])
+      Pred.site[,2] <- unlist(Pred.in[Pred.in$RCAID == RCAID,1:46])
       Pred.site <- data.frame(Pred.site)
       colnames(Pred.site) <- c("JulDay", "Pred")
       
@@ -601,7 +601,7 @@ This parts formats the error by day/site info
   ind <- apply(Pred.Log.out, 1, function(x) !any(is.na(x)))
   NoNA.pred <- Pred.Log.out[ind,]
   
-  NoNA.pred <- NoNA.pred[,c(9, 2, 1, 3)]
+  NoNA.pred <- NoNA.pred[,c(dataVar, "Pred", "JulDay", "SiteName")]
   colnames(NoNA.pred) <- c("Obs", "Pred", "JulDay", "SiteName")
   
  
@@ -609,7 +609,7 @@ This parts formats the error by day/site info
   SiteID <- as.matrix(SiteID)
   Error.pts.out <- matrix(nrow = length(SiteID), ncol = 47)
   
-  errorName <- paste0("JulDay_", namesnum)
+  errorName <- paste0("JulDay_", newnamesnum)
   colnames(Error.pts.out)[2:47] <- errorName
   colnames(Error.pts.out)[1] <- "SiteName"
   
@@ -665,6 +665,19 @@ Geospatial data output
   writeOGR(obj=error_pts, dsn=".", layer = paste0(outptsname), driver="ESRI Shapefile")
   writeOGR(obj=network, dsn=".", layer = paste0(outnetname), driver="ESRI Shapefile")
 ```
+If the points and network already exist, but going back later to output graphics
+```{r}
+
+  outnetname <- paste0(basin, "_", yearPath, "_8D_", var)
+  outptsname <- paste0(basin, "_Error_", yearPath, "_8D_", var)
+  
+  error_pts <- readOGR(dsn=".", outptsname)
+  
+  network <- readOGR(dsn=".", layer = outnetname)
+  network@data <- network@data[,-2]
+  error_pts <- spTransform(error_pts, proj4string(network))
+  
+```
 Animation output
 ```{r}
 
@@ -672,7 +685,7 @@ Animation output
   seis <- rev(seis)
   
   names.out <- colnames(network@data[3:48])
-  namesnum <- as.numeric(gsub(paste0("T", var, yrPath, "_"), "", colnames(network@data[3:48])))
+  namesnum <- as.numeric(gsub(paste0("T", var, yrPath), "", colnames(network@data[3:48])))
   means <- colMeans(network@data[3:48], na.rm = TRUE)
   SDs <- colStdevs(network@data[3:48], na.rm = TRUE)
   yplus <- means + SDs
@@ -730,7 +743,7 @@ setwd(paste0(modelPath, "/graphics/"))
 ```
 Still graphic output for wiki or web or wev
 ```{r}
-  i <- 22  
+  i <- 32  
   namey <- gsub(paste0("T", var, "_", yrPath, "_"), "", colnames(network@data)[i])
   fix3 <- classIntervals(network@data[,i], n = 11, style = "fixed",fixedBreaks=c(-1,2,4,6,8,10,12,14,16,18, 20))
       fix3.colors <- findColours(fix3,pal=seis)
@@ -752,12 +765,12 @@ Still graphic output for wiki or web or wev
         mtext(paste0(longBasin, " ",  yearPath, " 8-day ", var, " (°C)"),side =3, outer=TRUE, line=-3, col="black", cex=.7)
         mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-3, col="black", cex=.7)
         
-        tmp2 <- subplot(
-          plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,22), cex.main=.8, main="Basin mean", adj=0, xlab='',ylab='', col.lab="black", cex.axis=0.5, cex.lab = 0.25, col.axis="black", col.main = "black", bg="white"), 
-          x=grconvertX(c(0.0,0.25), from='npc'), 
-          y=grconvertY(c(0.80,0.95), from='npc'),
-          size=c(1,1.5), vadj=0.5, hadj=0.5, 
-          pars=list( mar=c(0,0,0,0)+0.1, cex=0.5))
+        # tmp2 <- subplot(
+        #   plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,22), cex.main=.8, main="Basin mean", adj=0, xlab='',ylab='', col.lab="black", cex.axis=0.5, cex.lab = 0.25, col.axis="black", col.main = "black", bg="white"), 
+        #   x=grconvertX(c(0.1,0.45), from='npc'), 
+        # y=grconvertY(c(0.1, 0.25), from='npc'),
+        # size=c(1,1.5), vadj=0.5, hadj=0.5, 
+        # pars=list( mar=c(0,0,0,0)+0.1, cex=0.5))
 ```
 This part generates the project.rs.xml file 
 ```{r, message=FALSE}
