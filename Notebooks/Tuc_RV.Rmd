@@ -1,0 +1,218 @@
+---
+title: "Tucannon RV modeling"
+output: html_notebook
+---
+
+
+```{r, message=FALSE}
+library(timeSeries)
+library(lattice)
+library(foreign)
+library(doBy)
+library(qpcR)
+library(pls)
+library(boot)
+library(Hmisc)
+library(readxl)
+library(lubridate)
+library(zoo)
+library(car)
+library(gvlma)
+library(ggplot2)
+library(foreign)
+
+  basin <- "Tuc"
+  longBasin <- "Tucannon"
+  yrPath <- 13
+  yearPath <- "2013"
+  dataPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/climate_Analysis/"
+  mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
+  
+  gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
+```
+Logger data processing part
+```{r}
+  Alldata <- data.frame(mup=NULL)
+  
+ 
+  ID.in <- read.csv(paste0(mainPath, "/" longBasin, "/", basin, "_RV_rcaID.csv"), stringsAsFactors=FALSE)
+  colnames(ID.in)[4] <- "RCAID"
+```
+
+  
+This section is repeated for each year
+```{r}
+ 
+
+  LST.in <- read.dbf(paste0(mainPath, "/", longBasin, "/", "LST", yrPath, "_", basin, "_RCA.dbf"))  
+  colnames(LST.in)<-gsub("X", "", colnames(LST.in))
+  
+  newnamesnum <- as.numeric(colnames(LST.in)[1:46])
+  Log.in <- read.csv(paste0(mainPath, "/", longBasin, "/", basin, "_", yearPath, "_summer_daily_logger_data.csv"), stringsAsFactors=FALSE)
+  
+  IDs <- unique(ID.in$SiteName)
+  SiteIDs <- Log.in$SiteName[Log.in$SiteName %in% IDs]
+  SiteID <- unique(SiteIDs)
+  SiteID <- as.matrix(SiteID)
+  model.data <- data.frame(mup=NULL)
+  LST.Log.out <- data.frame (mup = NULL)
+  
+  for (i in SiteID) 
+    { 
+      Log.site <- Log.in[Log.in$SiteName  == i,]
+      Log.site <- as.data.frame(Log.site)
+      
+      if (dim(Log.site)[1] > 90)
+        {
+          RCAID <- ID.in$RCAID[ID.in$SiteName == i]
+          Elev <- ID.in$Elev_M[ID.in$SiteName == i]
+          Max <- max(Log.site$DailyMax)
+          Mn <- mean(Log.site$DailyMn)
+          MnRng <- mean(Log.site$DailyRange)
+          AbRng <- Max - min(Log.site$DailyMin)
+          LST.site <- unlist(LST.in[LST.in$RCAID == RCAID,23:33])
+          mnLST <- mean(LST.site)
+          mxLST <- max(LST.site)
+          rngLST <- max(LST.site) - min(LST.site)
+          year <- Log.site$Year[1]
+          
+          
+          data <- data.frame(RCAID=RCAID, Elev=Elev, Max=Max, Mn=Mn, MnRng=MnRng, AbRng=AbRng, mnLST=mnLST, mxLST=mxLST, rngLST=rngLST, year=year, SiteName=i)
+          model.data <- rbind(model.data, data)
+         
+        } 
+    }
+  
+  
+  Alldata <- rbind(Alldata, model.data)
+```
+This section reads in the formatted data from the temperature models
+and merges it with the RV data by site.
+```{r}
+ data.in <- Alldata
+  
+  
+  LST.RV.out <- merge(Alldata, ID.in, by.x='SiteName', by.y='SiteName')
+
+ Data.means <- LST.RV.out
+ colnames(Data.means)[18] <- "DepR"
+ colnames(Data.means)[17] <- "BPS"
+ colnames(Data.means)[16] <- "EVT"
+ colnames(Data.means)[2] <- "RCAID"
+ 
+ write.csv(Data.means, file=paste0(dataPath, longBasin, "/", basin, "_RV_model_data_12_14.csv"))
+```
+
+Adding in the NBCD, BPS-EVH & EVH data
+
+```{r}
+
+ Data.means <- read.csv(paste0(dataPath, "/", basin, "RV_model_data_12_14.csv"), stringsAsFactors = FALSE)
+ 
+ baw <- read.csv(paste0(dataPath, "NBCD/", basin, "_RCA_BAW.csv"))
+ 
+ sa Data <- merge(Data.means, baw, by="RCAID", all.x=TRUE, all.y=FALSE)
+ colnames(Data)[21] <- "BAW"
+ Data.means <- Data
+ 
+```
+all years
+```{r}
+
+
+  y <- Data.means$Mn
+  x <- Data.means$mnLST
+  e <- Data.means$Elev
+  
+  year <- Data.means$year
+  yMnRng <- Data.means$MnRng
+  yAbsRng <- Data.means$AbRng
+  xRng <- Data.means$rngLST
+  yMax <- Data.means$Max
+  xMax <- Data.means$mxLST
+  baw <- Data.means$BAW
+  #evh <- Data.means$EVH_VHm
+  bps_evh <- Data.means$bps_evh
+```
+plot some data
+```{r}
+
+  plot(baw, y)
+  plot(baw, yMax)
+  
+```
+models
+```{r}
+  mod <- lm(y ~ x + e + baw + year)
+  sum_mod <- summary(mod)
+  sum_mod
+```
+```{r}
+  
+  mod2 <- lm(yMax ~ x + e + baw + year)
+  sum_mod2 <- summary(mod2)
+  sum_mod2
+```
+```{r}  
+  mod6 <- lm(y ~ x + baw)
+  sum_mod6 <- summary(mod6)
+  sum_mod6
+```
+```{r}  
+
+  mod11 <- lm(yMnRng ~ xRng + e + baw + year)
+  sum_mod11 <- summary(mod11)
+  sum_mod11
+```
+```{r}  
+  
+  mod15 <- lm(yMax ~ xMax + baw + year)
+  sum_mod15 <- summary(mod15)
+  sum_mod15
+```
+```{r}  
+  mod15 <- lm(yMax ~ xMax + baw + e + year)
+  sum_mod15 <- summary(mod15)
+  sum_mod15
+```
+```{r}  
+  mod20 <- lm(yAbsRng ~ xRng + e + baw + year)
+  sum_mod20 <- summary(mod20)
+  sum_mod20
+```
+```{r}  
+  mod2 <- lm(yMax ~ x + baw)
+  sum_mod2 <- summary(mod2)
+  sum_mod2
+```
+```{r}  
+###  
+  mod21 <- lm(y ~ x + e + baw + year)
+  sum_mod21 <- summary(mod21)
+  sum_mod21
+
+```  
+
+pred
+
+```{r}
+  
+  y <- Data.means$Mn
+  x <- Data.means$mnLST
+  e <- Data.means$Elev
+  rv <- Data.means$BAW
+  year <- Data.means$year
+  
+  modRv <- lm(y ~ x + rv + e)
+  sum_modRv <- summary(modRv)
+  sum_modRv
+  
+  future <- cbind(x,bps_evh, year)
+  colnames(future) <- c("x", "rv", "year")
+  future <- as.data.frame(future)
+  
+  pred.future <- predict(lm(y~ x + rv + year), newdata=future)
+
+  plot(y, pred.future)
+  abline(0,1)
+```
