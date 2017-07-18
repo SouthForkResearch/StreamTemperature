@@ -781,17 +781,17 @@ Still graphic output for wiki or web or wev
                                ifelse(abs(error_pts@data[,i])>2, 1.0,
                                       ifelse(abs(error_pts@data[,i])>3, 1.25, NA))))
         
-        plot(network, col=fix3.colors, bg="black", fg="white")
+        plot(network, col=fix3.colors, bg="white", fg="black")
       points(error_pts, pch=16, col="gray40", cex=cexEr)
       
-      legend("topright", fill = attr(fix3.colors, "palette"), title="8-day Mean (°C)",legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, inset=c(0,0), text.col="white");
-      legend("bottomright", pch=16, col="gray40", pt.cex=c(0.5, 0.75, 1.0, 1.25), title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", cex=.5, inset=c(0,0), text.col="white");
+      legend("topright", fill = attr(fix3.colors, "palette"), title="8-day Mean (°C)",legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, inset=c(0,0), text.col="black");
+      legend("bottomright", pch=16, col="gray40", pt.cex=c(0.5, 0.75, 1.0, 1.25), title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", cex=.5, inset=c(0,0), text.col="black");
       
-      mtext("Asotin 8-day mean (°C)",side =3, outer=TRUE, line=-3, col="white", cex=.7)
-      mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-3, col="white", cex=.7)
+      mtext("Asotin 8-day mean (°C)",side =3, outer=TRUE, line=-3, col="black", cex=.7)
+      mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-3, col="black", cex=.7)
       
       tmp2 <- subplot(
-        plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,18), cex.main=.8, main="Basin mean", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
+        plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,18), cex.main=.8, main="Basin mean", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="black", col.main = "black", bg="white"), 
         x=grconvertX(c(0.0,0.25), from='npc'), 
         y=grconvertY(c(0.80,0.95), from='npc'),
         size=c(1,1.5), vadj=0.5, hadj=0.5, 
