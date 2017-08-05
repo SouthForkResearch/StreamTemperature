@@ -1,5 +1,5 @@
 ---
-title: "Lower Clearwater Max 2013"
+title: "Lower Clearwater Mean 2011"
 output: html_notebook
 ---
 
@@ -32,8 +32,8 @@ library(uuid)
   basin <- "CW"
   midBasin <- "LCW"
   longBasin <- "Clearwater"
-  yrPath <- "13"
-  yearPath <- "2013"
+  yrPath <- "11"
+  yearPath <- "2011"
   
   nameBasin <- "Lower Clearwater" #this is from the Projects XML list of approved names
   
@@ -41,10 +41,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mx"
-  longVar <- "Max"
-  dataVar <- "Mx8D" #name of the variable in the logger data
-  capVar <- "MAX"
+  var <- "Mn"
+  longVar <- "Mean"
+  dataVar <- "Mn8D" #name of the variable in the logger data
+  capVar <- "MEAN"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -247,7 +247,7 @@ Model building
   colnames(ID.in) <- c("SiteID", "Elev", "RCAID")
   
   LST.in <- read.dbf(paste0("../../", "LST", yrPath, "_", basin, "_RCA.dbf"))
-  colnames(LST.in)<-gsub("X13", "", colnames(LST.in))
+  colnames(LST.in)<-gsub("X11", "", colnames(LST.in))
   newnamesnum <- as.numeric(colnames(LST.in)[1:46]);
   
   Dv.in <- read.csv(paste0("../", basin, "_", yearPath, "_Dv_8Day", ".csv"), stringsAsFactors = FALSE)
@@ -368,7 +368,7 @@ plot(mod)
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + e + d1 + d2, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + e, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
   
@@ -381,7 +381,7 @@ plot(mod)
   pred.out[,4] <- "full year"
   pred.out[,5] <- yearPath
   colnames(pred.out) <- c("Y", "PredY", "JulDay", "Season", "Year")
-  write.table (x=pred.out,append=F,row.names=F,file=paste0("jk_pred_v_y_", var, "_", basin, "_", yearPath, "_full_year.csv"),sep = ",", col.names=F)  
+  write.table (x=pred.out,append=T,row.names=F,file=paste0("jk_pred_v_y_", var, "_", basin, "_", yearPath, "_full_year.csv"),sep = ",", col.names=F)  
   
 ```
 ```{r}  
@@ -391,7 +391,7 @@ plot(mod)
 ```
 Output tables formatting for coeffs and metrics
 ```{r}    
-  coeffs_out <- data.frame(Int=numeric(2), bLST=numeric(2), bLST2=numeric(2), bJul=numeric(2), bElev=numeric(2), bD1=numeric(2), bD2=numeric(2))
+  coeffs_out <- data.frame(Int=numeric(2), bLST=numeric(2), bLST2=numeric(2), bJul=numeric(2), bElev=numeric(2), bD=numeric(2))
   metrics_out <- data.frame(r2=numeric(2), RMSE=numeric(2), p2=numeric(2), RMSEP=numeric(2), N_Sites=numeric(2), N=numeric(2))
   rownames(metrics_out) <- c("Spring", "Fall")
   rownames(coeffs_out) <- c("Spring", "Fall")
@@ -404,7 +404,6 @@ Output tables formatting for coeffs and metrics
   coeffs_out[1,4] <- 0
   coeffs_out[1,5] <- coeffs[4,1]
   coeffs_out[1,6] <- coeffs[5,1]
-  coeffs_out[1,7] <- coeffs[6,1]
   
   metrics_out[1,1] <- sum_mod$adj.r.squared
   metrics_out[1,2] <- sum_mod$sigma
@@ -419,7 +418,6 @@ Output tables formatting for coeffs and metrics
   coeffs_out[2,4] <- 0
   coeffs_out[2,5] <- coeffs[4,1]
   coeffs_out[2,6] <- coeffs[5,1]
-  coeffs_out[2,7] <- coeffs[6,1]
   
   metrics_out[2,1] <- sum_mod$adj.r.squared
   metrics_out[2,2] <- post_mod$sigma
@@ -444,8 +442,7 @@ Spring data model
   rownames(coeffs_out) <- c("Spring", "Fall")
   rownames(metrics_out) <- c("Spring", "Fall")
   rownames(coeffs_out) <- c("Spring", "Fall")
-```
-```{r}
+  
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -478,7 +475,7 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d1 + d2, data=data.sp[-c(961,959,962,1343,1401,1344,960,1286), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d1 + d2, data=data.sp[-c(1646,1722,1795,1649,1719,1576,1941), ])
 ```
 recheck for outliers
 ```{r}
@@ -499,7 +496,7 @@ more tests: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(961,959,962,1343,1401,1344,960,1286), ]
+  data.sp <- data.sp[-c(1646,1722,1795,1649,1719,1576,1941), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -706,7 +703,7 @@ This part applies the model coefficients to the LST to generate 8-day temp estim
   colnames(elev.in)[1] <- "RCAID"
   LST.in <- read.dbf(paste0("../../", "LST", yrPath, "_", basin, "_RCA.dbf"))
   
-  colnames(LST.in)<-gsub("X13", "", colnames(LST.in))
+  colnames(LST.in)<-gsub("X11", "", colnames(LST.in))
   
   newnamesnum <- as.numeric(colnames(LST.in)[1:46])
   
@@ -948,7 +945,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png LCW_2013_8D_Mx.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png LCW_2011_8D_Mn.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}

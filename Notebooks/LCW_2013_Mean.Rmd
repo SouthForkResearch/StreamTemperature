@@ -759,16 +759,18 @@ This parts formats the error by day/site info
           
           
           RCAID <- ID.in$RCAID[ID.in$SiteID == i]
-          
+          if (RCAID %in% Pred.in$RCAID)
+          {
           Pred.site <- matrix(ncol=2, nrow=46)
           Pred.site[,1] <- as.numeric(unlist(colnames(Pred.in)[1:46]))
-          Pred.site[,2] <- unlist(Pred.in[RCAID,1:46])
+          Pred.site[,2] <- unlist(Pred.in[Pred.in$RCAID == RCAID,1:46])
           Pred.site <- data.frame(Pred.site)
           colnames(Pred.site) <- c("JulDay", "Pred")
           
           Pred.Log.site <- merge(Pred.site, Log.site, by.x = "JulDay",by.y = "Days", all.x=TRUE, all.y = FALSE)
           
           Pred.Log.out <- rbind(Pred.Log.out, Pred.Log.site)
+          }
         }
       }
 
@@ -784,7 +786,7 @@ This parts formats the error by day/site info
   SiteID <- as.matrix(SiteID)
   Error.pts.out <- matrix(nrow = length(SiteID), ncol = 47)
   
-  errorName <- paste0("JulDay_", namesnum)
+  errorName <- paste0("JulDay_", newnamesnum)
   colnames(Error.pts.out)[2:47] <- errorName
   colnames(Error.pts.out)[1] <- "SiteName"
   
@@ -799,7 +801,7 @@ This parts formats the error by day/site info
         
         
         error <- matrix(ncol=1, nrow=46)
-        error[,1] <- namesnum
+        error[,1] <- newnamesnum
         error <- data.frame(error)
         colnames(error) <- c("JulDay")
         
@@ -819,6 +821,7 @@ Geospatial data output
 
   midBasin <- "LCW"
   gisPath <- paste0("D:/OneDrive/work/research/CHaMP/GIS/coverages/", longBasin)
+  Pred.in <- read.dbf(paste0("predt", yearPath, "_", basin, "_8D_", var, ".dbf"))
   
   netname <- paste0(longBasin, "_RCA_net")
   ptsname <- paste0(midBasin, "_sites")
@@ -833,7 +836,7 @@ Geospatial data output
   error_pts <- spTransform(error_pts, proj4string(network))
   
   error_pts <- merge(error_pts, Error.pts.out, by.x="SiteID", by.y="SiteName")
-  network <- merge(network, LogPred.out, by.x = "RCAID", by.y = "RCAID")                    
+  network <- merge(network, Pred.in, by.x = "RCAID", by.y = "RCAID")                    
                     
   outnetname <- paste0(basin, "_", yearPath, "_8D_", var)
   outptsname <- paste0(basin, "_Error_", yearPath, "_8D_", var)

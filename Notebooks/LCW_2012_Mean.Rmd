@@ -1,11 +1,12 @@
 ---
-title: "Lower Clearwater Max 2013"
+title: "Lower Clearwater Mean 2012"
 output: html_notebook
 ---
 
 This set of R scripts processes logger data for predictive stream temperature modeling
 Created: 21 Feb 2017
 Used for all watersheds and all years by changing the basin names and year paths 
+Edited 1 Aug 2017 to add discharge parameters
 
 Stage setting:
 ```{r, message=FALSE}
@@ -32,8 +33,8 @@ library(uuid)
   basin <- "CW"
   midBasin <- "LCW"
   longBasin <- "Clearwater"
-  yrPath <- "13"
-  yearPath <- "2013"
+  yrPath <- "12"
+  yearPath <- "2012"
   
   nameBasin <- "Lower Clearwater" #this is from the Projects XML list of approved names
   
@@ -41,10 +42,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mx"
-  longVar <- "Max"
-  dataVar <- "Mx8D" #name of the variable in the logger data
-  capVar <- "MAX"
+  var <- "Mn"
+  longVar <- "Mean"
+  dataVar <- "Mn8D" #name of the variable in the logger data
+  capVar <- "MEAN"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -55,8 +56,8 @@ This part reads the LST data and gap-fills using a cubic spline function
 ```{r, message=FALSE}
 
   LST.in <- read.dbf(paste0(dataPath, "/", basin, "_", yrPath, "_LST.dbf"))
-  PointID <- LST.in[,47]
-  LST.in <- LST.in[,1:46]
+  PointID <- LST.in[,1]
+  LST.in <- LST.in[,3:48]
   LST.in[LST.in<0.1] = NA
   
   LST.names<-colnames(LST.in)
@@ -164,7 +165,7 @@ Plot to look
 Discharge data formatting
 ```{r}
 
-  Dv.in <- read.csv(paste0("../", basin, "_dv_data_", yearPath, ".csv"), stringsAsFactors = FALSE)
+  Dv.in <- read.csv(paste0("../", basin, "_z2_dv_data_", yearPath, ".csv"), stringsAsFactors = FALSE)
   
   dates <- matrix(nrow=365, ncol=1)
   dates[,1] <- 1:365
@@ -175,24 +176,17 @@ Discharge data formatting
  
       Dv.site <- Dv.in
       full.year <- merge(dates, Dv.site, by.x = "Days", by.y = "JulDay", all.x = TRUE)
-      
-      eightday <- rollapply(full.year$Dv_z1, width = 8, FUN = mean, na.rm = T, fill = NA, align = c("left"))
+      eightday <- rollapply(full.year$Dv, width = 8, FUN = mean, na.rm = T, fill = NA, align = c("left"))
       eightday <- as.matrix(eightday)
-      full.year$Dv8D_z1<- eightday
-      full.year$Dv8D_z1[361] <- mean(full.year$Dv_z1[361:365 ])
-      
-      eightday <- rollapply(full.year$Dv_z2, width = 8, FUN = mean, na.rm = T, fill = NA, align = c("left"))
-      eightday <- as.matrix(eightday)
-      full.year$Dv8D_z2<- eightday
-      full.year$Dv8D_z2[361] <- mean(full.year$Dv_z2[361:365 ])
-      
+      full.year$Dv8D<- eightday
+      full.year$Dv8D[361] <- mean(full.year$Dv[361:365 ])
       Dv.8Day.out <- rbind(Dv.8Day.out, full.year)
    
   
   ind <- apply(Dv.8Day.out, 1, function(x) !any(is.na(x)))
   Dv.8Day.out <- Dv.8Day.out[ind,]
 
-write.csv(Dv.8Day.out, paste0("../", basin, "_", yearPath, "_Dv_8Day", ".csv"), row.names = FALSE)
+write.csv(Dv.8Day.out, paste0("../", basin, "_", yearPath, "_z2_Dv_8Day", ".csv"), row.names = FALSE)
 
 ```
 Logger data formatting
@@ -247,14 +241,16 @@ Model building
   colnames(ID.in) <- c("SiteID", "Elev", "RCAID")
   
   LST.in <- read.dbf(paste0("../../", "LST", yrPath, "_", basin, "_RCA.dbf"))
-  colnames(LST.in)<-gsub("X13", "", colnames(LST.in))
+  colnames(LST.in)<-gsub("X12", "", colnames(LST.in))
   newnamesnum <- as.numeric(colnames(LST.in)[1:46]);
   
-  Dv.in <- read.csv(paste0("../", basin, "_", yearPath, "_Dv_8Day", ".csv"), stringsAsFactors = FALSE)
+  Dv1.in <- read.csv(paste0("../", basin, "_", yearPath, "_Dv_8Day", ".csv"), stringsAsFactors = FALSE)
+  colnames(Dv1.in)[6] <- "Dv8Dz1"
+  Dv1.in <- Dv1.in[,c("Dv8Dz1", "Days")]
   
-  Dv1.in <- Dv.in[,c("Dv8D_z1", "Days")]
-  
-  Dv2.in <- Dv.in[,c("Dv8D_z2", "Days")]
+  Dv2.in <- read.csv(paste0("../", basin, "_", yearPath, "_z2_Dv_8Day", ".csv"), stringsAsFactors = FALSE)
+  colnames(Dv2.in)[6] <- "Dv8Dz2"
+  Dv2.in <- Dv2.in[,c("Dv8Dz2", "Days")]
   
   LST.Log.out <- data.frame (mup = NULL)
   SiteID <- unique(Log.in$SiteID)
@@ -284,12 +280,12 @@ Model building
       }
     }
   
-  Dv1 <- unlist(LST.Log.site$Dv8D_z1)
-  Dv2 <- unlist(LST.Log.site$Dv8D_z2)
+  Dv1 <- unlist(LST.Log.site$Dv8Dz1)
+  Dv2 <- unlist(LST.Log.site$Dv8Dz2)
   ind <- apply(LST.Log.out, 1, function(x) !any(is.na(x)))
   NoNA.xyz <- LST.Log.out[ind,]
   
-  NoNA.xyz <- NoNA.xyz[,c(dataVar, "LST", "JulDay", "Elev", "Dv8D_z1", "Dv8D_z2", "SiteID")]
+  NoNA.xyz <- NoNA.xyz[,c(dataVar, "LST", "JulDay", "Elev", "Dv8Dz1", "Dv8Dz2", "SiteID")]
   colnames(NoNA.xyz) <- c("y", "x", "z", "e", "d1", "d2", "SiteName")
   
   write.csv(x=NoNA.xyz, file= paste0(basin, "_", yearPath, "_8Day_", var, "_model_data.csv"), row.names = FALSE)
@@ -368,7 +364,7 @@ plot(mod)
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + e + d1 + d2, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + e, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
   
@@ -381,7 +377,7 @@ plot(mod)
   pred.out[,4] <- "full year"
   pred.out[,5] <- yearPath
   colnames(pred.out) <- c("Y", "PredY", "JulDay", "Season", "Year")
-  write.table (x=pred.out,append=F,row.names=F,file=paste0("jk_pred_v_y_", var, "_", basin, "_", yearPath, "_full_year.csv"),sep = ",", col.names=F)  
+  write.table (x=pred.out,append=T,row.names=F,file=paste0("jk_pred_v_y_", var, "_", basin, "_", yearPath, "_full_year.csv"),sep = ",", col.names=F)  
   
 ```
 ```{r}  
@@ -391,7 +387,7 @@ plot(mod)
 ```
 Output tables formatting for coeffs and metrics
 ```{r}    
-  coeffs_out <- data.frame(Int=numeric(2), bLST=numeric(2), bLST2=numeric(2), bJul=numeric(2), bElev=numeric(2), bD1=numeric(2), bD2=numeric(2))
+  coeffs_out <- data.frame(Int=numeric(2), bLST=numeric(2), bLST2=numeric(2), bJul=numeric(2), bElev=numeric(2), bD=numeric(2))
   metrics_out <- data.frame(r2=numeric(2), RMSE=numeric(2), p2=numeric(2), RMSEP=numeric(2), N_Sites=numeric(2), N=numeric(2))
   rownames(metrics_out) <- c("Spring", "Fall")
   rownames(coeffs_out) <- c("Spring", "Fall")
@@ -404,7 +400,6 @@ Output tables formatting for coeffs and metrics
   coeffs_out[1,4] <- 0
   coeffs_out[1,5] <- coeffs[4,1]
   coeffs_out[1,6] <- coeffs[5,1]
-  coeffs_out[1,7] <- coeffs[6,1]
   
   metrics_out[1,1] <- sum_mod$adj.r.squared
   metrics_out[1,2] <- sum_mod$sigma
@@ -419,7 +414,6 @@ Output tables formatting for coeffs and metrics
   coeffs_out[2,4] <- 0
   coeffs_out[2,5] <- coeffs[4,1]
   coeffs_out[2,6] <- coeffs[5,1]
-  coeffs_out[2,7] <- coeffs[6,1]
   
   metrics_out[2,1] <- sum_mod$adj.r.squared
   metrics_out[2,2] <- post_mod$sigma
@@ -444,8 +438,7 @@ Spring data model
   rownames(coeffs_out) <- c("Spring", "Fall")
   rownames(metrics_out) <- c("Spring", "Fall")
   rownames(coeffs_out) <- c("Spring", "Fall")
-```
-```{r}
+  
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -478,7 +471,7 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d1 + d2, data=data.sp[-c(961,959,962,1343,1401,1344,960,1286), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d1 + d2, data=data.sp[-c(1859,1856, 1315), ])
 ```
 recheck for outliers
 ```{r}
@@ -499,7 +492,7 @@ more tests: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(961,959,962,1343,1401,1344,960,1286), ]
+  data.sp <- data.sp[-c(1859,1856, 1315), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -596,7 +589,7 @@ check for outliers
 ```
 rerun w/o outliers (if necessary)
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d1 + d2, data=data.fall[-c(1,2,139,140), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d1 + d2, data=data.fall[-c(76), ])
 ```
 recheck for outliers
 ```{r}
@@ -615,10 +608,14 @@ more diagonstics: qqplot
 ```{r}
   qqPlot(mod, main="QQ Plot Fall Leg")
 ```
-
+Look at the residuals
+```{r}
+  spreadLevelPlot(mod)
+  plot(pred.y, mod$residuals, main="Model diagnostics Fall Leg", xlab="Predicted", ylab="Residuals")
+```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.fall <- data.fall[-c(1,2,139,140), ]
+  data.fall <- data.fall[-c(76), ]
   y <- data.fall$y
   x <- data.fall$x
   z <- data.fall$z
@@ -636,11 +633,6 @@ format the data for prediction output
   pred.y <- predict(mod)
   
   pred.y[pred.y < -0.5] = -0.5
-```
-Look at the residuals
-```{r}
-  spreadLevelPlot(mod)
-  plot(pred.y, mod$residuals, main="Model diagnostics Fall Leg", xlab="Predicted", ylab="Residuals")
 ```
 LOO PRESS stats
 ```{r}
@@ -705,8 +697,9 @@ This part applies the model coefficients to the LST to generate 8-day temp estim
   elev.in <- read.csv(paste0("../../", basin, "_rca_elev.csv"), stringsAsFactors = F)
   colnames(elev.in)[1] <- "RCAID"
   LST.in <- read.dbf(paste0("../../", "LST", yrPath, "_", basin, "_RCA.dbf"))
-  
-  colnames(LST.in)<-gsub("X13", "", colnames(LST.in))
+  #something up with day 361
+  LST.in[,46] <- LST.in[,45]
+  colnames(LST.in)<-gsub("X12", "", colnames(LST.in))
   
   newnamesnum <- as.numeric(colnames(LST.in)[1:46])
   
@@ -948,7 +941,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png LCW_2013_8D_Mx.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png LCW_2012_8D_Mn.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
