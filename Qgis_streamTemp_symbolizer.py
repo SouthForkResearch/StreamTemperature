@@ -7,7 +7,7 @@ class VectorSymbolizer():
 
     def symbolize(self):
         # define ranges: label, lower value, upper value, color name
-        cond_cat = (
+        temp_cat = (
             ('0-10', 0.0, 10.0, '"#0024E3'),
             ('10-12', 10.0, 12.0, '#0087CD'),
             ('12-14', 12.0, 14.0, '#16F45A'),
@@ -21,9 +21,9 @@ class VectorSymbolizer():
             ('>28', 28.0, 40.0, '#AA0000')
         )
 
-        # create a category for each item in animals
+        # create a category for each item in Augmean
         ranges = []
-        for label, lower, upper, color in cond_cat:
+        for label, lower, upper, color in temp_cat:
             symbol = QgsSymbolV2.defaultSymbol(self.layer.geometryType())
             symbol.setColor(QColor(color))
             symbol.setWidth(0.5)
@@ -31,5 +31,8 @@ class VectorSymbolizer():
             ranges.append(rng)
 
         # create the renderer and assign it to a layer
-        expression = 'area_solar'  # field name
+        expression = []
+        for feature in layer.getFeatures():
+            attrs = feature.attributes()
+            sum(attrs[29:33])/6
         self.renderer = QgsGraduatedSymbolRendererV2(expression, ranges)
