@@ -826,6 +826,17 @@ Geospatial data output
   writeOGR(obj=error_pts, dsn=".", layer = paste0(outptsname), driver="ESRI Shapefile", overwrite_layer = TRUE)
   writeOGR(obj=network, dsn=".", layer = paste0(outnetname), driver="ESRI Shapefile", overwrite_layer = TRUE)
 ```
+reread in the spatial data
+```{r, message=FALSE}
+
+  outnetname <- paste0(basin, "_", yearPath, "_8D_", var)
+  outptsname <- paste0(basin, "_Error_", yearPath, "_8D_", var)
+    
+  error_pts <- readOGR(dsn=".", outptsname)
+  
+  network <- readOGR(dsn=".", layer = outnetname)
+  
+```
 Animation output
 ```{r, message=FALSE}
 
@@ -866,10 +877,10 @@ Animation output
       plot(network, col=fix3.colors, bg="black", fg="white")
       points(error_pts, pch=16, col="gray40", cex=cexEr)
       
-    legend("topright", fill = attr(fix3.colors, "palette"), title="8-day Mean (°C)",legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, inset=c(0,0), text.col="white");
+    legend("topright", fill = attr(fix3.colors, "palette"), title=paste0("8-day ", longVar, " (°C)"),legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, inset=c(0,0), text.col="white");
       legend("bottomright", pch=16, col="gray40", pt.cex=c(0.5, 0.75, 1.0, 1.25), title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", cex=.5, inset=c(0,0), text.col="white");
       
-      mtext("Asotin 8-day mean (°C)",side =3, outer=TRUE, line=-3, col="white", cex=.7)
+      mtext(paste0(nameBasin, " 8-day ", longVar, " ", yearPath, " (°C)"),side =3, outer=TRUE, line=-3, col="white", cex=.7)
       mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-3, col="white", cex=.7)
       
       tmp2 <- subplot(
