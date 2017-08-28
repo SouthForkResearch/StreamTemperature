@@ -7,3 +7,8 @@ Basin_page_template
 #.bak
 get-pip.py
 basin_template
+Shiny/TempMetricsApp/rsconnect/documents/FishMetricAppDep.R/shinyapps.io/streamtemperature/temperature_exceedence_metrics.dcf
+Shiny/rsconnect/documents/FishMetricAppDep.R/shinyapps.io/streamtemperature/Shiny.dcf
+*.httr-oauth
+*.rds
+Shiny/ErrorApp/rsconnect/documents/ErrorAppDep.R/shinyapps.io/streamtemperature/site_model_error.dcf
