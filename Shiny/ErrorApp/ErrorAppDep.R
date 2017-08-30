@@ -50,9 +50,10 @@ ui <- fluidPage(
   # Sidebar with a slider input for number of bins 
   sidebarLayout(
     sidebarPanel(
+      h5("This tool reads in your logger data and compares it to modeled mean stream temperature estimates."),
       selectInput(inputId = "year",
                   label = "Choose Year",
-                  choices = c("2011", "2012", "2013", "2014"),
+                  choices = c("2011", "2012", "2013", "2014", "2015"),
                   selected = "2013"),
       selectInput(inputId = "basin",
                   label = "Choose Basin",
@@ -80,9 +81,13 @@ ui <- fluidPage(
                 accept =  c(
                   "text/csv",
                   "text/comma-separated-values,text/plain",
-                  ".csv"))
+                  ".csv")),
       
-      #actionButton("button", "Update")
+      h5("The small inset graph shows the basin-wide summer mean temperature."),
+      h5("Data, code, and descriptions of the models can be found ",
+         a("here.", 
+           href = "https://github.com/SouthForkResearch/StreamTemperature/wiki")),
+      h6("Contact: Kris McNyset at kris -at- southforkresearch.org")
       
                
     ),
@@ -90,8 +95,9 @@ ui <- fluidPage(
     # Show a plot of the generated error
     
     mainPanel(
+      h5("(May take a few moments to load...)"),
       plotOutput(outputId = "meanGraph", width = 650, height = 750),
-      h4("RMSE for each site (°C)"),
+      h4("Root Mean Squared Error for each site (°C)"),
       tableOutput(outputId = "tableRMSE")
     )
   )
@@ -337,7 +343,7 @@ server <- function(input, output) {
     legend("right", fill = attr(fix3.colors, "palette"), title="°C", legend = c("2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=1.0, inset=c(0,0), text.col="black");
     legend("bottomright", pch=16, col="gray40", pt.cex=c(1.0, 1.5, 2.0, 2.5), title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", cex=1.0, inset=c(0,0), text.col="black");
     
-    mtext(paste0(longBasin, " ",  yearPath, " 8-day summer ", var, " (°C)"),side =3, outer=TRUE, line=-3, col="black", cex=1.0)
+    mtext(paste0(longBasin, " ",  yearPath, " 8-day Summer ", tVar, " (°C)"),side =3, outer=TRUE, line=-3, col="black", cex=1.0)
     
     tmp2 <- subplot(
       plot(namesnum, means, col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,22), cex.main=1.0, main="Basin mean", adj=0, xlab='',ylab='', col.lab="black", cex.axis=0.8, cex.lab = 0.75, col.axis="black", col.main = "black", bg="white"), 
