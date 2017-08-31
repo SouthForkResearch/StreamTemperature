@@ -179,6 +179,11 @@ server <- function(input, output) {
     SDs <- colStdevs(net@data[2:47], na.rm = TRUE)
     days <- net@data[, start:end]
     count <- (rowSums(days > maxTemp))*8
+    
+    validate(
+      need(sum(count) > 0, "No days above the threshold.")
+    )
+    
     net@data$count <- count
     summary_all <- quantile(count, na.rm = TRUE)
     nclr <- length(unique(count))
@@ -186,38 +191,39 @@ server <- function(input, output) {
     fix3 <- classIntervals(means, n = 10, style = "fixed",fixedBreaks=c(2,4,6,8,10,12,14,16,18,20))
     fix3.colors <- findColours(fix3,pal=seis)
     
-    fix4 <- classIntervals(net@data$count, n = nclr, style = "equal")
-    fix4.colors <- findColours(fix4,pal=purp6)
     
-    plot(net, col=fix4.colors, bg="white", fg="black",lwd=2)
-    legend("topright", 
-           fill = attr(fix4.colors, "palette"), 
-           title="Day above threshold", 
-           legend = names(attr(fix4.colors, "table")), 
-           bty = "n", 
-           cex=1.0, 
-           inset=c(0,0), 
-           text.col="black")
-    
-    tmp2 <- subplot(
-      plot(namesnum, 
-           means, 
-           col=fix3.colors, 
-           pch=16, 
-           bty="n", 
-           xlim=c(0,362), 
-           ylim=c(0,22), 
-           cex.main=1.0, 
-           main="Basin mean temp", 
-           adj=0, xlab='',ylab='', 
-           col.lab="black", 
-           cex.axis=0.8, 
-           cex.lab = 0.75, col.axis="black", col.main = "black", bg="white", abline(h=maxTemp, v=c(minDate,maxDate))), 
-      x=grconvertX(c(0.0,0.43), from='npc'), 
-      y=grconvertY(c(0.00, 0.15), from='npc'),
-      size=c(1,1.5), vadj=0.7, hadj=0.7, 
-      pars=list( mar=c(0,0,0,0)+0.1, cex=0.9))
+      fix4 <- classIntervals(net@data$count, n = nclr, style = "equal")
+      fix4.colors <- findColours(fix4,pal=purp6)
       
+      plot(net, col=fix4.colors, bg="white", fg="black",lwd=2)
+      legend("topright", 
+             fill = attr(fix4.colors, "palette"), 
+             title="Day above threshold", 
+             legend = names(attr(fix4.colors, "table")), 
+             bty = "n", 
+             cex=1.0, 
+             inset=c(0,0), 
+             text.col="black")
+      
+      tmp2 <- subplot(
+        plot(namesnum, 
+             means, 
+             col=fix3.colors, 
+             pch=16, 
+             bty="n", 
+             xlim=c(0,362), 
+             ylim=c(0,22), 
+             cex.main=1.0, 
+             main="Basin mean temp", 
+             adj=0, xlab='',ylab='', 
+             col.lab="black", 
+             cex.axis=0.8, 
+             cex.lab = 0.75, col.axis="black", col.main = "black", bg="white", abline(h=maxTemp, v=c(minDate,maxDate))), 
+        x=grconvertX(c(0.0,0.43), from='npc'), 
+        y=grconvertY(c(0.00, 0.15), from='npc'),
+        size=c(1,1.5), vadj=0.7, hadj=0.7, 
+        pars=list( mar=c(0,0,0,0)+0.1, cex=0.9))
+        
       
     
     output$tableMean <- renderTable({
