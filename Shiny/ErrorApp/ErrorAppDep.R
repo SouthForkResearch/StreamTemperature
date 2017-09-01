@@ -58,7 +58,7 @@ ui <- fluidPage(
                   options = list(placeholder = 'Year')),
       selectizeInput(inputId = "basin",
                   label = "Choose Basin",
-                  choices = c("", "Entiat", "Lemhi", "Pahsimeroi", "Potlatch", "Wenatchee"),
+                  choices = c("", "Asotin", "Entiat", "JohnDay", "Lemhi", "MFSalmon-PantherCreek", "Pahsimeroi", "Potlatch", "Secesh", "Tucannon", "Wenatchee"),
                   selected = NULL,
                   options = list(placeholder = 'Basin')),
       
