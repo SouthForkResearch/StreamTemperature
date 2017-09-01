@@ -51,14 +51,16 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       h5("This tool reads in your logger data and compares it to modeled mean stream temperature estimates."),
-      selectInput(inputId = "year",
+      selectizeInput(inputId = "year",
                   label = "Choose Year",
-                  choices = c("2011", "2012", "2013", "2014", "2015"),
-                  selected = "2013"),
-      selectInput(inputId = "basin",
+                  choices = c("", "2011", "2012", "2013", "2014", "2015"),
+                  selected = NULL,
+                  options = list(placeholder = 'Year')),
+      selectizeInput(inputId = "basin",
                   label = "Choose Basin",
-                  choices = c("Entiat", "Lemhi", "Pahsimeroi", "Wenatchee"),
-                  selected = "Wenatchee"),
+                  choices = c("", "Entiat", "Lemhi", "Pahsimeroi", "Potlatch", "Wenatchee"),
+                  selected = NULL,
+                  options = list(placeholder = 'Basin')),
       
       helpText("Logger data file should be a .csv or .txt file with",
                "a minimum of 3 columns with headers: 'SiteName',",
