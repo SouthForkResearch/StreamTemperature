@@ -57,7 +57,7 @@ ui <- fluidPage(
                   options = list(placeholder = 'Year')),
       selectizeInput(inputId = "basin",
                   label = "Choose Basin",
-                  choices = c("", "Asotin", "Entiat", "JohnDay", "Lemhi", "MFSalmon-PantherCreek", "Pahsimeroi", "Potlatch", "Secesh", "Tucannon", "Wenatchee", "YankeeFork"),
+                  choices = c("", "Asotin", "Entiat", "JohnDay", "Lemhi", "Minam-Wallowa", "MFSalmon-PantherCreek", "Pahsimeroi", "Potlatch", "Secesh", "Tucannon", "Wenatchee", "YankeeFork"),
                   selected = NULL,
                   options = list(placeholder = 'Basin')),
       selectInput(inputId = "metric",
@@ -137,6 +137,8 @@ server <- function(input, output) {
       basinName <- "UGR"
     } else if (longBasin == "UpperSalmon"){
       basinName <- "USal"
+    } else if (longBasin == "Minam-Wallowa"){
+      basinName <- "MinW"
     } else if (longBasin == "YankeeFork"){
       basinName <- "YF"
     } else {
