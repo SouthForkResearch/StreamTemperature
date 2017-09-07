@@ -57,7 +57,7 @@ ui <- fluidPage(
                   options = list(placeholder = 'Year')),
       selectizeInput(inputId = "basin",
                   label = "Choose Basin",
-                  choices = c("", "Asotin", "Entiat", "JohnDay", "Lemhi", "MFSalmon-PantherCreek", "Pahsimeroi", "Potlatch", "Secesh", "Tucannon", "Wenatchee"),
+                  choices = c("", "Asotin", "Entiat", "JohnDay", "Lemhi", "MFSalmon-PantherCreek", "Pahsimeroi", "Potlatch", "Secesh", "Tucannon", "Wenatchee", "YankeeFork"),
                   selected = NULL,
                   options = list(placeholder = 'Basin')),
       selectInput(inputId = "metric",
@@ -259,7 +259,36 @@ server <- function(input, output) {
           y=grconvertY(c(0.00, 0.15), from='npc'),
           size=c(1,1.5), vadj=0.7, hadj=0.7, 
           pars=list( mar=c(0,0,0,0)+0.1, cex=0.9))
-      } else {
+      } else if(basinName == "YF"){
+        plot(net, col=fix4.colors, bg="white", fg="black",lwd=2)
+        legend("topleft", 
+               fill = attr(fix4.colors, "palette"), 
+               title="Day above threshold", 
+               legend = names(attr(fix4.colors, "table")), 
+               bty = "n", 
+               cex=1.0, 
+               inset=c(0,0), 
+               text.col="black")
+        
+        tmp2 <- subplot(
+          plot(namesnum, 
+               means, 
+               col=fix3.colors, 
+               pch=16, 
+               bty="n", 
+               xlim=c(0,362), 
+               ylim=c(0,22), 
+               cex.main=1.0, 
+               main="Basin mean temp", 
+               adj=0, xlab='',ylab='', 
+               col.lab="black", 
+               cex.axis=0.8, 
+               cex.lab = 0.75, col.axis="black", col.main = "black", bg="white", abline(h=maxTemp, v=c(minDate,maxDate))), 
+          x=grconvertX(c(0.0,0.43), from='npc'), 
+          y=grconvertY(c(0.00, 0.15), from='npc'),
+          size=c(1,1.5), vadj=0.7, hadj=0.7, 
+          pars=list( mar=c(0,0,0,0)+0.1, cex=0.9))
+        } else {
         plot(net, col=fix4.colors, bg="white", fg="black",lwd=2)
         legend("topright", 
                fill = attr(fix4.colors, "palette"), 
