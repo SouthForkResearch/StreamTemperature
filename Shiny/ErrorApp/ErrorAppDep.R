@@ -58,7 +58,7 @@ ui <- fluidPage(
                   options = list(placeholder = 'Year')),
       selectizeInput(inputId = "basin",
                   label = "Choose Basin",
-                  choices = c("", "Asotin", "Entiat", "JohnDay", "Lemhi", "Methow", "Minam-Wallowa", "MFSalmon-PantherCreek", "Pahsimeroi", "Potlatch", "Secesh", "Tucannon", "Wenatchee", "YankeeFork"),
+                  choices = c("", "Asotin", "Entiat", "JohnDay", "Lemhi", "Methow", "Minam-Wallowa", "MFSalmon-PantherCreek", "Pahsimeroi", "Potlatch", "Secesh", "SForkSalmon", "Tucannon", "Wenatchee", "YankeeFork"),
                   selected = NULL,
                   options = list(placeholder = 'Basin')),
       
@@ -167,6 +167,8 @@ server <- function(input, output) {
       basinName <- "Panth"
     } else if (longBasin == "Minam-Wallowa"){
       basinName <- "MinW"
+    } else if (longBasin == "SForkSalmon"){
+      basinName <- "SFS"
     } else if (longBasin == "UpperGrandRonde"){
       basinName <- "UGR"
     } else if (longBasin == "UpperSalmon"){
@@ -315,7 +317,7 @@ server <- function(input, output) {
     proj4string(Error.sites.out) = CRS("+proj=longlat +datum=NAD83 +ellps=WGS84 +towgs84=0,0,0")
     Error.sites.out <- spTransform(Error.sites.out, proj4string(network))
     Error.sites.out@data$Mn <- NULL
-    Error.sites.out$Mn <- abs(rowMeans(Error.sites.out@data[2:47]))
+    Error.sites.out$Mn <- abs(rowMeans(Error.sites.out@data[2:47], na.rm = TRUE))
     
     namesnum <- as.numeric(gsub(paste0(varName, yrPath, "_"), "", colnames(network@data[2:47])))
     means <- colMeans(network@data[2:47], na.rm = TRUE)
@@ -349,7 +351,7 @@ server <- function(input, output) {
     
     tmp2 <- subplot(
       plot(namesnum, means, col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,22), cex.main=1.0, main="Basin mean", adj=0, xlab='',ylab='', col.lab="black", cex.axis=0.8, cex.lab = 0.75, col.axis="black", col.main = "black", bg="white"), 
-      x=grconvertX(c(0.1,0.45), from='npc'), 
+      x=grconvertX(c(0.01,0.40), from='npc'), 
       y=grconvertY(c(0.05, 0.20), from='npc'),
       size=c(1,1.5), vadj=0.7, hadj=0.7, 
       pars=list( mar=c(0,0,0,0)+0.1, cex=0.9))
