@@ -178,7 +178,7 @@ Model building
   Log.in <- read.csv(paste0("../../", basin, "_logger_8D_", yearPath, ".csv"), stringsAsFactors = FALSE)
  
 
-  ID.in <- read.csv(paste0("../../", longBasin, "_sites_rca_elev.csv"), stringsAsFactors = FALSE) 
+  ID.in <- read.csv(paste0("../../", basin, "_sites_elev.csv"), stringsAsFactors = FALSE) 
   
   
   LST.in <- read.dbf(paste0("../", "LST", yrPath, "_", basin, "_RCA.dbf"))
@@ -658,7 +658,7 @@ This parts formats the error by day/site info
   
   Pred.in <- read.dbf(paste0("predt", yearPath, "_", basin, "_8D_", var, ".dbf"))
   colnames(Pred.in)<-gsub(varName, "", colnames(Pred.in))
-  colnames(Pred.in)<-gsub("_", "", colnames(Pred.in))
+  colnames(Pred.in)<-gsub("_14_", "", colnames(Pred.in))
   newnamesnum <- as.numeric(colnames(Pred.in)[1:46]);
   
   Pred.Log.out <- data.frame (mup = NULL)
@@ -696,7 +696,7 @@ This parts formats the error by day/site info
   SiteID <- as.matrix(SiteID)
   Error.pts.out <- matrix(nrow = length(SiteID), ncol = 47)
   
-  errorName <- paste0("JulDay_", namesnum)
+  errorName <- paste0("JulDay_", newnamesnum)
   colnames(Error.pts.out)[2:47] <- errorName
   colnames(Error.pts.out)[1] <- "SiteName"
   
@@ -711,7 +711,7 @@ This parts formats the error by day/site info
         
         
         error <- matrix(ncol=1, nrow=46)
-        error[,1] <- namesnum
+        error[,1] <- newnamesnum
         error <- data.frame(error)
         colnames(error) <- c("JulDay")
         
@@ -733,10 +733,10 @@ Geospatial data output
   LogPred.out <- read.dbf(paste0("predt",yearPath, "_", basin, "_8D_", var, ".dbf"))
   
   netname <- paste0(basin, "_STHD_net")
-  ptsname <- paste0(basin, "_all_sites_RCA")
+  ptsname <- paste0(basin, "_sites_rca")
   
   error_pts <- readOGR(dsn=gisPath, ptsname)
-  error_pts@data <- error_pts@data[,c(5,10)]
+  error_pts@data <- error_pts@data[,c(4,9)]
   
   network <- readOGR(dsn=gisPath, layer = netname)
   
@@ -751,13 +751,24 @@ Geospatial data output
   writeOGR(obj=error_pts, dsn=".", layer = paste0(outptsname), driver="ESRI Shapefile", overwrite_layer = TRUE)
   writeOGR(obj=network, dsn=".", layer = paste0(outnetname), driver="ESRI Shapefile", overwrite_layer = TRUE)
 ```
+reread in the spatial data
+```{r}
+
+  outnetname <- paste0(basin, "_", yearPath, "_8D_", var)
+  outptsname <- paste0(basin, "_Error_", yearPath, "_8D_", var)
+    
+  error_pts <- readOGR(dsn=".", outptsname)
+  
+  network <- readOGR(dsn=".", layer = outnetname)
+  
+```
 Animation output
 ```{r, message=FALSE}
 
   seis = c("#AA0000", "#D00000", "#F70000", "#FF1D00", "#FF4400", "#FF6A00", "#FF9000", "#FFB700", "#FFDD00", "#FFE200", "#BDFF0C", "#73FF1A", "#3FFA36", "#16F45A", "#00D08B", "#0087CD", "#0048FA", "#0024E3")
   seis <- rev(seis)
   
-  #var <- "mn"
+  var <- "mn"
   names.out <- colnames(network@data[3:48])
   namesnum <- as.numeric(gsub(paste0("Tmn", "_", yrPath, "_"), "", colnames(network@data[3:48])))
   means <- colMeans(network@data[3:48], na.rm = TRUE)
@@ -781,24 +792,24 @@ Animation output
       fix3 <- classIntervals(network@data[,i], n = 11, style = "fixed",fixedBreaks=c(-1,2,4,6,8,10,12,14,16,18,20))
       fix3.colors <- findColours(fix3,pal=seis)
       
-      # cexEr <-ifelse(abs(error_pts@data[,i]) == 0, 0,
-      #                ifelse(abs(error_pts@data[,i])>0 & error_pts@data[,i-1]<1, 0.5,
-      #                       ifelse(abs(error_pts@data[,i])>1 & error_pts@data[,i-1]<2, 0.75,
-      #                              ifelse(abs(error_pts@data[,i])>2 & error_pts@data[,i]<3, 1.0,
-      #                                     ifelse(abs(error_pts@data[,i])>3, 1.25,
-      #                                            ifelse(abs(error_pts@data[,i])== NA, 0, NA))))))
-      # 
+      cexEr <-ifelse(abs(error_pts@data[,i]) == 0, 0,
+                     ifelse(abs(error_pts@data[,i])>0 & error_pts@data[,i-1]<1, 0.5,
+                            ifelse(abs(error_pts@data[,i])>1 & error_pts@data[,i-1]<2, 0.75,
+                                   ifelse(abs(error_pts@data[,i])>2 & error_pts@data[,i]<3, 1.0,
+                                          ifelse(abs(error_pts@data[,i])>3, 1.25,
+                                                 ifelse(abs(error_pts@data[,i])== NA, 0, NA))))))
+
       plot(network, col=fix3.colors, bg="black", fg="white")
-      # points(error_pts, pch=16, col="gray40", cex=cexEr)
+      points(error_pts, pch=16, col="gray40", cex=cexEr)
       
     legend(x=grconvertX(c(0.88, 0.95), from='npc'),
-             y=grconvertY(c(0.35, 0.55), from='npc'), fill = attr(fix3.colors, "palette"), title="8-day Mn (°C)", legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, inset=c(.1,0), text.col="white");
+             y=grconvertY(c(0.35, 0.55), from='npc'), fill = attr(fix3.colors, "palette"), title="8-day Mn (°C)", legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, text.col="white");
 
-      # legend(x=grconvertX(c(0.02, 0.25), from='npc'), 
-      #        y=grconvertY(c(0.3, 0.5), from='npc'),, title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", pch=16, pt.cex=c(0.5, 0.75, 1.0, 1.25), col = "gray40", cex=.5, text.col="white");
-      #    
+      legend(x=grconvertX(c(0.02, 0.25), from='npc'),
+             y=grconvertY(c(0.3, 0.5), from='npc'),, title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", pch=16, pt.cex=c(0.5, 0.75, 1.0, 1.25), col = "gray40", cex=.5, text.col="white");
+
       
-      title(paste0(longBasin, " 8-day ", var, " ", yearPath, " (°C)"), line=-0.9, adj=.80, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5, cex.sub=0.5)
+      title(paste0(nameBasin, " 8-day ", var, " ", yearPath, " (°C)"), line=0.7, adj=.80, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5, cex.sub=0.5)
       mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-4, col="white", cex=.5)
    tmp2 <- subplot(
         plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean (+/-SD)", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
@@ -826,12 +837,12 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Tucannon_2014_8D_Mn.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png SFS_2014_8D_Mn.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
   i <- 23  
-  namey <- gsub(paste0("T", var, "_", yrPath, "_"), "", colnames(network@data)[i])
+  namey <- gsub(paste0("Tmn_", yrPath, "_"), "", colnames(network@data)[i])
       
       filename <- paste0(modelPath, "/graphics/Stills/", basin, "_", yearPath, "_8D_", var, ".png", sep="")
      png(filename=filename, res = 300, width = 1500, height = 1500, units = "px", bg="white")
@@ -839,23 +850,24 @@ Still graphic output for wiki or web or wev
       fix3 <- classIntervals(network@data[,i], n = 11, style = "fixed",fixedBreaks=c(-1,2,4,6,8,10,12,14,16,18,20))
       fix3.colors <- findColours(fix3,pal=seis)
       
-      # cexEr <-ifelse(abs(error_pts@data[,i]) == 0, 0,
-      #                ifelse(abs(error_pts@data[,i])>0 & error_pts@data[,i-1]<1, 0.5,
-      #                       ifelse(abs(error_pts@data[,i])>1 & error_pts@data[,i-1]<2, 0.75,
-      #                              ifelse(abs(error_pts@data[,i])>2 & error_pts@data[,i]<3, 1.0,
-      #                                     ifelse(abs(error_pts@data[,i])>3, 1.25,
-      #                                            ifelse(abs(error_pts@data[,i])== NA, 0, NA))))))
-      # 
-      plot(network, col=fix3.colors, bg="white", fg="black")
-      # points(error_pts, pch=16, col="gray40", cex=cexEr)
-      
-    legend("bottomleft", fill = attr(fix3.colors, "palette"), title="8-day Mn (°C)", legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, inset=c(.1,0), text.col="black");
+      cexEr <-ifelse(abs(error_pts@data[,i]) == 0, 0,
+                     ifelse(abs(error_pts@data[,i])>0 & error_pts@data[,i-1]<1, 0.5,
+                            ifelse(abs(error_pts@data[,i])>1 & error_pts@data[,i-1]<2, 0.75,
+                                   ifelse(abs(error_pts@data[,i])>2 & error_pts@data[,i]<3, 1.0,
+                                          ifelse(abs(error_pts@data[,i])>3, 1.25,
+                                                 ifelse(abs(error_pts@data[,i])== NA, 0, NA))))))
 
-      # legend(x=grconvertX(c(0.02, 0.25), from='npc'), 
-      #        y=grconvertY(c(0.3, 0.5), from='npc'),, title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", pch=16, pt.cex=c(0.5, 0.75, 1.0, 1.25), col = "gray40", cex=.5, text.col="white");
-      #    
+      plot(network, col=fix3.colors, bg="white", fg="black")
+      points(error_pts, pch=16, col="gray40", cex=cexEr)
       
-      title(paste0(longBasin, " 8-day ", var, " ", yearPath, " (°C)"), line=-0.9, adj=.80, col.main="black", col.sub="white", outer=FALSE, cex.main=0.5, cex.sub=0.5)
+    legend(x=grconvertX(c(0.88, 0.95), from='npc'),
+             y=grconvertY(c(0.35, 0.55), from='npc'), fill = attr(fix3.colors, "palette"), title="8-day Mn (°C)", legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, text.col="black");
+
+      legend(x=grconvertX(c(0.02, 0.25), from='npc'),
+             y=grconvertY(c(0.3, 0.5), from='npc'), title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", pch=16, pt.cex=c(0.5, 0.75, 1.0, 1.25), col = "gray40", cex=.5, text.col="black");
+
+      
+      title(paste0(nameBasin, " 8-day ", longVar, " ", yearPath, " (°C)"), line=0, adj=.80, col.main="black", col.sub="white", outer=FALSE, cex.main=0.5, cex.sub=0.5)
       mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-4, col="black", cex=.5)
 ```
 This part generates the project.rs.xml file 
