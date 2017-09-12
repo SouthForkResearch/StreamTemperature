@@ -1,11 +1,12 @@
 ---
-title: "South Fork Salmon 2014 Mean"
+title: "South Fork Salmon 2014 Max"
 output: html_notebook
 ---
 
 This set of R scripts processes logger data for predictive stream temperature modeling
 Created: 21 Feb 2017
 Used for all watersheds and all years by changing the basin names and year paths 
+USGS site: 13310700
 
 Stage setting:
 ```{r, message=FALSE}
@@ -29,7 +30,7 @@ library(RColorBrewer)
 library(classInt)
 library(uuid)
 ```
-```{r}
+```{r, message=FALSE}
    basin <- "SFS"
   midBasin <- "SFSalmon"
   longBasin <- "S_Fork_Salmon"
@@ -42,10 +43,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mn"
-  longVar <- "Mean"
-  dataVar <- "Mn8Day" #name of the variable in the logger data
-  capVar <- "MEAN"
+  var <- "Mx"
+  longVar <- "Max"
+  dataVar <- "Max8Day" #name of the variable in the logger data
+  capVar <- "MAX"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -393,7 +394,7 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.sp[-c(832), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.sp[-c(##), ])
 ```
 recheck for outliers
 ```{r}
@@ -415,7 +416,7 @@ more tests: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(832), ]
+  data.sp <- data.sp[-c(##), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -809,7 +810,7 @@ Animation output
   fix4 <- classIntervals(means, n = 10, style = "fixed",fixedBreaks=c(-1,2,4,6,8,10,12,14,16,18))
   fix4.colors <- findColours(fix4,pal=seis)
   
-  for (i in 3:48)
+  for (i in 43:48)
     {
       
       namey <- gsub(paste0("T", var, yrPath, "_"), "", colnames(network@data)[i])
@@ -817,9 +818,9 @@ Animation output
       filename <- paste0(modelPath, "/graphics/", namer[i-2], ".png", sep="")
       png(filename=filename, res = 300, width = 1500, height = 1500, units = "px", bg="black")
       
-      fix3 <- classIntervals(network@data[,i], n = 11, style = "fixed",fixedBreaks=c(-1,2,4,6,8,10,12,14,16,18,20))
-      fix3.colors <- findColours(fix3,pal=seis)
-      
+      # fix3 <- classIntervals(network@data[,i], n = 11, style = "fixed",fixedBreaks=c(-1,2,4,6,8,10,12,14,16,18,20))
+      # fix3.colors <- findColours(fix3,pal=seis)
+
       cexEr <-ifelse(abs(error_pts@data[,i]) == 0, 0,
                      ifelse(abs(error_pts@data[,i])>0 & error_pts@data[,i-1]<1, 0.5,
                             ifelse(abs(error_pts@data[,i])>1 & error_pts@data[,i-1]<2, 0.75,
@@ -865,7 +866,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png SFS_2014_8D_Mn.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png SFS_2014_8D_Max.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
@@ -903,8 +904,8 @@ This part generates the project.rs.xml file
 
 Realizguid = UUIDgenerate(F)
 
-#now <- Sys.Date()
-now <- "2017-04-20"
+now <- Sys.Date()
+#now <- "2017-04-20"
 
 ```
 Start writing project.rs.xml file here
