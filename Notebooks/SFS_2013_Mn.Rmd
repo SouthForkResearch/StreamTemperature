@@ -1,5 +1,5 @@
 ---
-title: "South Fork Salmon 2013 Max"
+title: "South Fork Salmon 2013 Mean"
 output: html_notebook
 ---
 
