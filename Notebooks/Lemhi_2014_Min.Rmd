@@ -1,5 +1,5 @@
 ---
-title: "Lemhi 2015 Max"
+title: "Lemhi 2014 Min"
 output: html_notebook
 ---
 
@@ -34,8 +34,8 @@ library(uuid)
   basin <- "Lem"
   midBasin <- "Lemhi"
   longBasin <- "Lemhi"
-  yrPath <- "15"
-  yearPath <- "2015"
+  yrPath <- "14"
+  yearPath <- "2014"
   
   nameBasin <- "Lemhi" #this is from the Projects XML list of approved names
   
@@ -43,10 +43,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mx"
-  longVar <- "Max"
-  dataVar <- "Max8Day" #name of the variable in the logger data
-  capVar <- "MAX"
+  var <- "Min"
+  longVar <- "Min"
+  dataVar <- "Min8D" #name of the variable in the logger data
+  capVar <- "MIN"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -213,7 +213,7 @@ Model building
   
   
   LST.in <- read.dbf(paste0("../../", "LST", yrPath, "_", basin, "_RCA.dbf"))
-  colnames(LST.in)<-gsub("X", "", colnames(LST.in))
+  colnames(LST.in)<-gsub("lsts114", "", colnames(LST.in))
   newnamesnum <- as.numeric(colnames(LST.in)[1:46]);
   Dv.in <- read.csv(paste0("../", basin, "_", yearPath, "_Dv_8Day", ".csv"), stringsAsFactors = FALSE)
   
@@ -626,9 +626,9 @@ write out predicted, coeffs, & metrics
 write it out
 ```{r}
   
-  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=T)
+  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=NA)
   
-  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=T)
+  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=NA)
   
 ```
 plot the full year of predicted v observed
@@ -653,7 +653,7 @@ This part applies the model coefficients to the LST to generate 8-day temp estim
  
   LST.in <- read.dbf(paste0("../../", "LST", yrPath, "_", basin, "_RCA.dbf"))
   
-  colnames(LST.in)<-gsub("X", "", colnames(LST.in))
+  colnames(LST.in)<-gsub("lsts114", "", colnames(LST.in))
   
   newnamesnum <- as.numeric(colnames(LST.in)[1:46])
   
@@ -798,7 +798,7 @@ Geospatial data output
   error_pts@data <- error_pts@data[,c(5,15)]
   
   network <- readOGR(dsn=gisPath, layer = netname)
-  network@data <- network@data[,c(1,14)]
+  network@data <- network@data[,c(13,33)]
   error_pts <- spTransform(error_pts, proj4string(network))
   
   error_pts <- merge(error_pts, Error.pts.out, by.x="SiteName", by.y="SiteName")
@@ -855,7 +855,7 @@ Animation output
              y=grconvertY(c(0.3, 0.5), from='npc'),, title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", pch=16, pt.cex=c(0.5, 0.75, 1.0, 1.25), col = "gray40", cex=.5, text.col="white");
          
       
-      title(paste0(longBasin, " 8-day ", var, " ", yearPath, " (°C)"), line=-0.9, adj=.80, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5, cex.sub=0.5)
+      title(paste0(longBasin, " 8-day ", longVar, " ", yearPath, " (°C)"), line=-0.9, adj=.80, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5, cex.sub=0.5)
       mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-4, col="white", cex=.5)
    tmp2 <- subplot(
         plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean (+/-SD)", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
@@ -883,7 +883,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Lemhi_2015_8D_Max.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Lemhi_2014_8D_Min.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
