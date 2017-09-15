@@ -1,11 +1,12 @@
 ---
-title: "Lemhi Min 2013"
+title: "Lemhi Min 2012"
 output: html_notebook
 ---
 
 This set of R scripts processes logger data for predictive stream temperature modeling
 Created: 21 Feb 2017
 Used for all watersheds and all years by changing the basin names and year paths 
+USGS site: 13305310
 
 Stage setting:
 ```{r, message=FALSE}
@@ -27,12 +28,13 @@ library(rgdal)
 library(raster)
 library(RColorBrewer)
 library(classInt)
-
+```
+```{r}
   basin <- "Lem"
   midBasin <- "Lemhi"
   longBasin <- "Lemhi"
-  yrPath <- "13"
-  yearPath <- "2013"
+  yrPath <- "12"
+  yearPath <- "2012"
   
   nameBasin <- "Lemhi" #this is from the Projects XML list of approved names
   
@@ -55,7 +57,7 @@ This part reads the LST data and gap-fills using a cubic spline function
 
   
   
-  LST.in <- read.dbf(paste0(gisPath, "/", midBasin, "/", basin, "_", yrPath, "_LST.dbf"))
+  LST.in <- read.dbf(paste0(gisPath, longBasin, "/", basin, "_", yrPath, "_LST.dbf"))
   PointID <- LST.in[,1]
   LST.in <- LST.in[,2:47]
   LST.in[LST.in<0.1] = NA
@@ -126,7 +128,7 @@ out_Preds <- read.dbf(paste0(mainPath, longBasin, "/", "LST", yrPath, "_", basin
   
   
   weights <- read.csv(paste0(mainPath, "/", longBasin, "/", basin, "_rca_area_wgts.csv"), stringsAsFactors=FALSE)
-  weights[weights$area_wgt<0.01, "area_wgt"] = 0.01
+  weights[weights$area_wgts<0.01, "area_wgts"] = 0.01
   
   rcas <- unique(unlist(weights$RCAID))
   rca_zonal <- matrix(ncol=46, nrow=length(rcas))
@@ -137,7 +139,7 @@ out_Preds <- read.dbf(paste0(mainPath, longBasin, "/", "LST", yrPath, "_", basin
   for(i in rcas)	
     {
       pixels <- weights[weights$RCAID == i, "GRIDCODE"]
-      wgts <- weights[weights$RCAID == i, "area_wgt"]
+      wgts <- weights[weights$RCAID == i, "area_wgts"]
       
       for (j in 1:46)
       {
@@ -157,7 +159,7 @@ Plot to look
 ```{r}
   plot(1:46, rca_zonal[1,1:46])
   plot(1:46, rca_zonal[1000,1:46])
-  write.dbf(rca_zonal, file = paste0("../", "LST", yrPath, "_", basin, "_RCA.dbf"))
+  write.dbf(rca_zonal, file = paste0("../../", "LST", yrPath, "_", basin, "_RCA.dbf"))
   
 ```
 Logger data formatting
@@ -176,11 +178,11 @@ Logger data formatting
   for (i in SiteID) 
     { 
       Log.site <- Log.in[Log.in$SiteID == i,]
-      full.year <- merge(dates, Log.site, by.x = "Days", by.y = "JulDay", all.x = TRUE)
-      eightday <- rollapply(full.year$DailyMinimum, width = 8, FUN = mean, na.rm = T, fill = NA, align = c("left"))
+      full.year <- merge(dates, Log.site, by = "Days", all.x = TRUE)
+      eightday <- rollapply(full.year$DailyMean, width = 8, FUN = mean, na.rm = T, fill = NA, align = c("left"))
       eightday <- as.matrix(eightday)
-      full.year$Min8D<- eightday
-      full.year$Min8D[361] <- mean(full.year$DailyMinimum[361:365])
+      full.year$Mn8D<- eightday
+      full.year$Mn8D[361] <- mean(full.year$DailyMean[361:365])
       Log.8Day.out <- rbind(Log.8Day.out, full.year)
       
     }
@@ -192,14 +194,41 @@ Logger data formatting
   
 ```
 Merge the CBS/NorWeST data with the CHaMP data by hand
+Discharge data formatting
+```{r}
+
+  Dv.in <- read.csv(paste0("../", basin, "_dv_data_", yearPath, ".csv"), stringsAsFactors = FALSE)
+  
+  dates <- matrix(nrow=365, ncol=1)
+  dates[,1] <- 1:365
+  colnames(dates) <- c("Days")
+  
+  Dv.8Day.out <- data.frame (mup = NULL)
+  
+ 
+      Dv.site <- Dv.in
+      full.year <- merge(dates, Dv.site, by.x = "Days", by.y = "JulDay", all.x = TRUE)
+      
+      eightday <- rollapply(full.year$Dv, width = 8, FUN = mean, na.rm = T, fill = NA, align = c("left"))
+      eightday <- as.matrix(eightday)
+      full.year$Dv8D<- eightday
+      full.year$Dv8D[361] <- mean(full.year$Dv[361:365 ])
+      
+      Dv.8Day.out <- rbind(Dv.8Day.out, full.year)
+   
+  
+  ind <- apply(Dv.8Day.out, 1, function(x) !any(is.na(x)))
+  Dv.8Day.out <- Dv.8Day.out[ind,]
+
+write.csv(Dv.8Day.out, paste0("../", basin, "_", yearPath, "_Dv_8Day", ".csv"), row.names = FALSE)
+
+```
 Model building
 ```{r}
-  Log.in <- read.csv(paste0(basin, "_", yearPath, "_all_logger_8Day_", var, ".csv"), stringsAsFactors = FALSE)
-  Log.in <- Log.in[,c(1,2,4,8,9)]
-  colnames(Log.in)[1:2] <- c("JulDay", "SiteName")
+  Log.in <- read.csv(paste0("../../", basin, "_logger_8D_", yearPath, ".csv"), stringsAsFactors = FALSE)
+ 
   
   ID.in <- read.csv(paste0("../../", basin, "_sites_rca.csv"), stringsAsFactors=FALSE)
-  colnames(ID.in)[5] <- "SiteID"
   
   LST.in <- read.dbf(paste0("../../", "LST", yrPath, "_", basin, "_RCA.dbf"))
   colnames(LST.in)<-gsub("X", "", colnames(LST.in))
@@ -411,7 +440,7 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.sp[-c(31,126,159,94,63,191,290,224,257), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.sp[-c(#), ])
 ```
 recheck for outliers
 ```{r}
@@ -433,7 +462,7 @@ more tests: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(31,126,159,94,63,191,290,224,257), ]
+  data.sp <- data.sp[-c(##), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -526,22 +555,46 @@ check for outliers
 ```{r}
   outlierTest(mod)
 ```
-plot model diagnostics
+rerun w/o outliers
 ```{r}
-  plot(mod)
+  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.fall[-c(6), ])
 ```
-rerun w/o outliers (if necessary)
+recheck for outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(%##%), ])
+  outlierTest(mod)
 ```
 recheck assumptions
 ```{r}
   gvmodel <- gvlma(mod)
   summary(gvmodel)
 ```
+plot model diagnostics
+```{r}
+  plot(mod)
+```
 more diagonstics: qqplot
 ```{r}
   qqPlot(mod, main="QQ Plot Fall Leg")
+```
+if outliers need to be removed (otherwise skip)
+```{r}
+  data.fall <- data.fall[-c(6), ]
+  y <- data.fall$y
+  x <- data.fall$x
+  z <- data.fall$z
+  e <- data.fall$e
+  d <- data.fall$d
+  
+  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z)
+  sum_mod <- summary(mod)
+```
+format the data for prediction output 
+```{r}
+  
+  coeffs <- as.matrix(coefficients(mod))
+  pred.y <- predict(mod)
+  
+  pred.y[pred.y < -0.5] = -0.5
 ```
 Look at the residuals
 ```{r}
@@ -679,10 +732,6 @@ This parts formats the error by day/site info
 
 ```{r}
 
-  Log.in <- read.csv(paste0(basin, "_", yearPath, "_all_logger_8Day_", var, ".csv"), stringsAsFactors = FALSE)
-  Log.in <- Log.in[,c(1,2,4,8,9)]
-  colnames(Log.in)[1:2] <- c("JulDay", "SiteName")
-  
   
   Pred.in <- read.dbf(paste0("predt", yearPath, "_", basin, "_8D_", var, ".dbf"))
   colnames(Pred.in)<-gsub(varName, "", colnames(Pred.in))
@@ -806,7 +855,7 @@ Animation output
       
       fix3 <- classIntervals(network@data[,i], n = 11, style = "fixed",fixedBreaks=c(-1,2,4,6,8,10,12,14,16,18,20))
       fix3.colors <- findColours(fix3,pal=seis)
-      
+
       cexEr <-ifelse(abs(error_pts@data[,i]) == 0, 0,
                      ifelse(abs(error_pts@data[,i])>0 & error_pts@data[,i-1]<1, 0.5,
                             ifelse(abs(error_pts@data[,i])>1 & error_pts@data[,i-1]<2, 0.75,
@@ -851,7 +900,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Lemhi_2013_8D_Min.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Lemhi_2012_8D_Min.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
