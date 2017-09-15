@@ -1,5 +1,5 @@
 ---
-title: "Lemhi Max 2011"
+title: "Lemhi Mn 2011"
 output: html_notebook
 ---
 
@@ -42,10 +42,10 @@ library(classInt)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mx"
-  longVar <- "Max"
-  dataVar <- "Mx8D" #name of the variable in the logger data
-  capVar <- "MAX"
+  var <- "Mn"
+  longVar <- "Mean"
+  dataVar <- "Mn8D" #name of the variable in the logger data
+  capVar <- "MEAN"
 
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -469,7 +469,7 @@ more tests: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(315), ]
+  data.sp <- data.sp[-c(##), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -498,7 +498,7 @@ LOO PRESS stats
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + z + e + d + d*z, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + z + d + d*z, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
 ```
@@ -520,7 +520,7 @@ write out predicted, coeffs, & metrics
   coeffs_out[1,4] <- coeffs[4,1]
   coeffs_out[1,5] <- coeffs[5,1]
   coeffs_out[1,6] <- coeffs[6,1]
-  coeffs_out[1,7] <- coeffs[7,1]
+  coeffs_out[1,7] <- 0
   
   metrics_out[1,1] <- sum_mod$adj.r.squared
   metrics_out[1,2] <- sum_mod$sigma
@@ -541,7 +541,7 @@ Fall data model
   plot(x, y, main="fall")
 ```
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + d + d*z)
+  mod <- lm(y ~ x + I(x^2) + z + d)
   sum_mod <- summary(mod)
   sum_mod
 ```
@@ -564,7 +564,7 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.fall[-c(##), ])
+  mod <- lm(y ~ x + I(x^2) + z + d + d*z, data=data.fall[-c(##), ])
 ```
 recheck for outliers
 ```{r}
@@ -592,7 +592,7 @@ if outliers need to be removed (otherwise skip)
   e <- data.fall$e
   d <- data.fall$d
   
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z)
+  mod <- lm(y ~ x + I(x^2) + z + d + d*z)
   sum_mod <- summary(mod)
 ```
 format the data for prediction output 
@@ -619,7 +619,7 @@ LOO PRESS stats
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + z + e + d + d*z, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + z + d, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
 ```
@@ -638,9 +638,9 @@ write out predicted, coeffs, & metrics
   coeffs_out[2,2] <- coeffs[2,1]
   coeffs_out[2,3] <- coeffs[3,1]
   coeffs_out[2,4] <- coeffs[4,1]
-  coeffs_out[2,5] <- coeffs[5,1]
-  coeffs_out[2,6] <- coeffs[6,1]
-  coeffs_out[2,7] <- coeffs[7,1]
+  coeffs_out[2,5] <- 0
+  coeffs_out[2,6] <- coeffs[5,1]
+  coeffs_out[2,7] <- 0
   
   metrics_out[2,1] <- sum_mod$adj.r.squared
   metrics_out[2,2] <- post_mod$sigma
@@ -907,7 +907,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Lemhi_2011_8D_Max.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Lemhi_2011_8D_Mn.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
