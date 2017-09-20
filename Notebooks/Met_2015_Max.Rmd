@@ -28,6 +28,8 @@ library(raster)
 library(RColorBrewer)
 library(classInt)
 library(uuid)
+```
+```{r}
 
    basin <- "Met"
   midBasin <- "Methow"
@@ -247,7 +249,7 @@ Model building
       
       LST.site <- matrix(ncol=3, nrow=46)
       LST.site[,1] <- as.numeric(unlist(colnames(LST.in)[1:46]))
-      LST.site[,2] <- unlist(LST.in[RCAID,1:46])
+      LST.site[,2] <- unlist(LST.in[LST.in$RCAID == RCAID, 1:46])
       LST.site <- data.frame(LST.site)
       colnames(LST.site) <- c("JulDay", "LST", "Elev")
       LST.site[3] <- Elev
@@ -432,11 +434,7 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.sp[-c(426,445), ])
-```
-plot model diagnostics
-```{r}
-  plot(mod)
+  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.sp[-c(434), ])
 ```
 recheck for outliers
 ```{r}
@@ -447,14 +445,17 @@ recheck assumptions
   gvmodel <- gvlma(mod)
   summary(gvmodel)
 ```
-
+plot model diagnostics
+```{r}
+  plot(mod)
+```
 more tests: qqplot
 ```{r}
   qqPlot(mod, main="QQ Plot Spring Leg")
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(426,445), ]
+  data.sp <- data.sp[-c(434), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -736,7 +737,7 @@ This parts formats the error by day/site info
         
         Pred.site <- matrix(ncol=2, nrow=46)
         Pred.site[,1] <- as.numeric(unlist(colnames(Pred.in)[1:46]))
-        Pred.site[,2] <- unlist(Pred.in[RCAID,1:46])
+        Pred.site[,2] <- unlist(Pred.in[Pred.in$RCAID == RCAID, 1:46])
         Pred.site <- data.frame(Pred.site)
         colnames(Pred.site) <- c("JulDay", "Pred")
         
@@ -860,7 +861,7 @@ Animation output
              y=grconvertY(c(0.3, 0.5), from='npc'),, title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", pch=16, pt.cex=c(0.5, 0.75, 1.0, 1.25), col = "gray40", cex=.5, text.col="white");
 
       
-      title(paste0(longBasin, " 8-day ", var, " ", yearPath, " (°C)"), line=.5, adj=.80, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5, cex.sub=0.5)
+      title(paste0(longBasin, " 8-day ", longVar, " ", yearPath, " (°C)"), line=.5, adj=.80, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5, cex.sub=0.5)
       mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-4, col="white", cex=.5)
    tmp2 <- subplot(
         plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean (+/-SD)", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
