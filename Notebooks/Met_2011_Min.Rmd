@@ -1,5 +1,5 @@
 ---
-title: "Methow 2011 Mean"
+title: "Methow 2011 Min"
 output: html_notebook
 ---
 
@@ -44,10 +44,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mn"
-  longVar <- "Mean"
-  dataVar <- "Mn8Day" #name of the variable in the logger data
-  capVar <- "MEAN"
+  var <- "Min"
+  longVar <- "Min"
+  dataVar <- "Min8Day" #name of the variable in the logger data
+  capVar <- "MIN"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -326,7 +326,7 @@ plot(mod)
 ```{r}
   plot(pred.y, mod$residuals, main="Model diagnostics Full Year", xlab="Predicted", ylab="Residuals")
 ```
-```{r}
+```{r, message=FALSE}
   pressstat_sum <- PRESS(mod, verbose = "FALSE")
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
@@ -749,7 +749,7 @@ This parts formats the error by day/site info
       }
 
 ```
-```{r}
+```{r, message=FALSE}
   ind <- apply(Pred.Log.out, 1, function(x) !any(is.na(x)))
   NoNA.pred <- Pred.Log.out[ind,]
   
@@ -891,7 +891,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Met_2011_8D_Mn.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Met_2011_8D_Min.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
