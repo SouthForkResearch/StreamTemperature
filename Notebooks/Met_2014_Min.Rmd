@@ -1,5 +1,5 @@
 ---
-title: "Methow 2014 Mean"
+title: "Methow 2014 Min"
 output: html_notebook
 ---
 
@@ -31,7 +31,6 @@ library(classInt)
 library(uuid)
 ```
 ```{r}
-
    basin <- "Met"
   midBasin <- "Methow"
   longBasin <- "Methow"
@@ -44,10 +43,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mn"
-  longVar <- "Mean"
-  dataVar <- "Mn8Day" #name of the variable in the logger data
-  capVar <- "MEAN"
+  var <- "Min"
+  longVar <- "Min"
+  dataVar <- "Min8Day" #name of the variable in the logger data
+  capVar <- "MIN"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -527,7 +526,7 @@ Fall data model
   plot(x, y, main="fall")
 ```
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d )
+  mod <- lm(y ~ x + I(x^2) + z + e + d)
   sum_mod <- summary(mod)
   sum_mod
 ```
@@ -619,7 +618,7 @@ write out predicted, coeffs, & metrics
   coeffs_out[2,4] <- coeffs[4,1]
   coeffs_out[2,5] <- coeffs[5,1]
   coeffs_out[2,6] <- coeffs[6,1]
-  coeffs_out[2,7] <- coeffs[7,1]
+  coeffs_out[2,7] <- 0
   
   metrics_out[2,1] <- sum_mod$adj.r.squared
   metrics_out[2,2] <- post_mod$sigma
@@ -856,7 +855,7 @@ Animation output
       points(error_pts, pch=16, col="gray40", cex=cexEr)
       
     legend(x=grconvertX(c(0.88, 0.95), from='npc'),
-             y=grconvertY(c(0.35, 0.55), from='npc'), fill = attr(fix3.colors, "palette"), title="°C", legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, inset=c(.1,0), text.col="white");
+             y=grconvertY(c(0.35, 0.55), from='npc'), fill = attr(fix3.colors, "palette"), title="8-day Mn (°C)", legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, inset=c(.1,0), text.col="white");
 
       legend(x=grconvertX(c(0.02, 0.25), from='npc'),
              y=grconvertY(c(0.3, 0.5), from='npc'),, title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", pch=16, pt.cex=c(0.5, 0.75, 1.0, 1.25), col = "gray40", cex=.5, text.col="white");
@@ -890,7 +889,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Met_2014_8D_Mn.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Met_2014_8D_Min.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}

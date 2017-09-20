@@ -1,5 +1,5 @@
 ---
-title: "Methow 2014 Mean"
+title: "Methow 2014 Max"
 output: html_notebook
 ---
 
@@ -44,10 +44,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mn"
-  longVar <- "Mean"
-  dataVar <- "Mn8Day" #name of the variable in the logger data
-  capVar <- "MEAN"
+  var <- "Mx"
+  longVar <- "Max"
+  dataVar <- "Max8Day" #name of the variable in the logger data
+  capVar <- "MAX"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -527,7 +527,7 @@ Fall data model
   plot(x, y, main="fall")
 ```
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d )
+  mod <- lm(y ~ x + I(x^2) + z + e + d)
   sum_mod <- summary(mod)
   sum_mod
 ```
@@ -619,7 +619,7 @@ write out predicted, coeffs, & metrics
   coeffs_out[2,4] <- coeffs[4,1]
   coeffs_out[2,5] <- coeffs[5,1]
   coeffs_out[2,6] <- coeffs[6,1]
-  coeffs_out[2,7] <- coeffs[7,1]
+  coeffs_out[2,7] <- 0
   
   metrics_out[2,1] <- sum_mod$adj.r.squared
   metrics_out[2,2] <- post_mod$sigma
@@ -862,7 +862,7 @@ Animation output
              y=grconvertY(c(0.3, 0.5), from='npc'),, title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", pch=16, pt.cex=c(0.5, 0.75, 1.0, 1.25), col = "gray40", cex=.5, text.col="white");
 
       
-      title(paste0(longBasin, " 8-day ", var, " ", yearPath, " (°C)"), line=.5, adj=.80, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5, cex.sub=0.5)
+      title(paste0(longBasin, " 8-day ", longVar, " ", yearPath, " (°C)"), line=.5, adj=.80, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5, cex.sub=0.5)
       mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-4, col="white", cex=.5)
    tmp2 <- subplot(
         plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean (+/-SD)", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
@@ -890,7 +890,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Met_2014_8D_Mn.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Met_2014_8D_Mx.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
