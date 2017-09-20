@@ -855,7 +855,7 @@ Animation output
       points(error_pts, pch=16, col="gray40", cex=cexEr)
       
     legend(x=grconvertX(c(0.88, 0.95), from='npc'),
-             y=grconvertY(c(0.35, 0.55), from='npc'), fill = attr(fix3.colors, "palette"), title="8-day Mn (°C)", legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, inset=c(.1,0), text.col="white");
+             y=grconvertY(c(0.35, 0.55), from='npc'), fill = attr(fix3.colors, "palette"), title="°C", legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, inset=c(.1,0), text.col="white");
 
       legend(x=grconvertX(c(0.02, 0.25), from='npc'),
              y=grconvertY(c(0.3, 0.5), from='npc'),, title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", pch=16, pt.cex=c(0.5, 0.75, 1.0, 1.25), col = "gray40", cex=.5, text.col="white");
