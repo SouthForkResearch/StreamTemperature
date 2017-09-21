@@ -29,6 +29,8 @@ library(raster)
 library(RColorBrewer)
 library(classInt)
 library(uuid)
+```
+```{r}
 
    basin <- "Tuc"
   midBasin <- "Tucannon"
@@ -245,7 +247,7 @@ Model building
       
       LST.site <- matrix(ncol=3, nrow=46)
       LST.site[,1] <- as.numeric(unlist(colnames(LST.in)[1:46]))
-      LST.site[,2] <- unlist(LST.in[RCAID,1:46])
+      LST.site[,2] <- unlist(LST.in[LST.in$RCAID == RCAID, 1:46])
       LST.site <- data.frame(LST.site)
       colnames(LST.site) <- c("JulDay", "LST", "Elev")
       LST.site[3] <- Elev
@@ -432,10 +434,6 @@ rerun w/o outliers
 ```{r}
   mod <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(##), ])
 ```
-plot model diagnostics
-```{r}
-  plot(mod)
-```
 recheck for outliers
 ```{r}
   outlierTest(mod)
@@ -445,14 +443,17 @@ recheck assumptions
   gvmodel <- gvlma(mod)
   summary(gvmodel)
 ```
-
+plot model diagnostics
+```{r}
+  plot(mod)
+```
 more tests: qqplot
 ```{r}
   qqPlot(mod, main="QQ Plot Spring Leg")
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(512), ]
+  data.sp <- data.sp[-c(##), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -522,7 +523,7 @@ Fall data model
   plot(x, y, main="fall")
 ```
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z)
+  mod <- lm(y ~ x + I(x^2) + z + e)
   sum_mod <- summary(mod)
   sum_mod
 ```
@@ -545,7 +546,11 @@ check for outliers
 ```
 rerun w/o outliers (if necessary)
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.fall[-c(641,748), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.fall[-c(##), ])
+```
+recheck for outliers
+```{r}
+  outlierTest(mod)
 ```
 recheck assumptions
 ```{r}
@@ -562,7 +567,7 @@ more diagonstics: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.fall <- data.fall[-c(641,748), ]
+  data.fall <- data.fall[-c(##), ]
   y <- data.fall$y
   x <- data.fall$x
   z <- data.fall$z
@@ -589,7 +594,7 @@ LOO PRESS stats
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + z + e + d + d*z, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + z + e, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
 ```
@@ -614,8 +619,8 @@ write out predicted, coeffs, & metrics
   coeffs_out[2,3] <- coeffs[3,1]
   coeffs_out[2,4] <- coeffs[4,1]
   coeffs_out[2,5] <- coeffs[5,1]
-  coeffs_out[2,6] <- coeffs[6,1]
-  coeffs_out[2,7] <- coeffs[7,1]
+  coeffs_out[2,6] <- 0
+  coeffs_out[2,7] <- 0
   
   metrics_out[2,1] <- sum_mod$adj.r.squared
   metrics_out[2,2] <- post_mod$sigma
@@ -625,9 +630,9 @@ write out predicted, coeffs, & metrics
   metrics_out[2,6] <- length(y)
 
   
-  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=T)
+  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=NA)
   
-  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=T)
+  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=NA)
   
 ```
 plot the full year of predicted v observed
@@ -734,7 +739,7 @@ This parts formats the error by day/site info
         
         Pred.site <- matrix(ncol=2, nrow=46)
         Pred.site[,1] <- as.numeric(unlist(colnames(Pred.in)[1:46]))
-        Pred.site[,2] <- unlist(Pred.in[RCAID,1:46])
+        Pred.site[,2] <- unlist(Pred.in[Pred.in$RCAID == RCAID, 1:46])
         Pred.site <- data.frame(Pred.site)
         colnames(Pred.site) <- c("JulDay", "Pred")
         
@@ -853,13 +858,13 @@ Animation output
       points(error_pts, pch=16, col="gray40", cex=cexEr)
       
     legend(x=grconvertX(c(0.88, 0.95), from='npc'),
-             y=grconvertY(c(0.35, 0.55), from='npc'), fill = attr(fix3.colors, "palette"), title="8-day Mn (°C)", legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, inset=c(.1,0), text.col="white");
+             y=grconvertY(c(0.35, 0.55), from='npc'), fill = attr(fix3.colors, "palette"), title="°C", legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, inset=c(.1,0), text.col="white");
 
       legend(x=grconvertX(c(0.02, 0.25), from='npc'),
              y=grconvertY(c(0.3, 0.5), from='npc'),, title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", pch=16, pt.cex=c(0.5, 0.75, 1.0, 1.25), col = "gray40", cex=.5, text.col="white");
 
       
-      title(paste0(longBasin, " 8-day ", var, " ", yearPath, " (°C)"), line=-0.9, adj=.80, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5, cex.sub=0.5)
+      title(paste0(longBasin, " 8-day ", longVar, " ", yearPath, " (°C)"), line=-0.9, adj=.80, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5, cex.sub=0.5)
       mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-4, col="white", cex=.5)
    tmp2 <- subplot(
         plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean (+/-SD)", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
@@ -924,8 +929,8 @@ This part generates the project.rs.xml file
 
 Realizguid = UUIDgenerate(F)
 
-#now <- Sys.Date()
-now <- "2014-10-01"
+now <- Sys.Date()
+#now <- "2014-10-01"
 
 ```
 Start writing project.rs.xml file here
