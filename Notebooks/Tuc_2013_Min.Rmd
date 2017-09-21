@@ -1,5 +1,5 @@
 ---
-title: "Tucannon 2013 Max"
+title: "Tucannon 2013 Min"
 output: html_notebook
 ---
 
@@ -44,10 +44,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mx"
-  longVar <- "Max"
-  dataVar <- "Mx8D" #name of the variable in the logger data
-  capVar <- "MAX"
+  var <- "Min"
+  longVar <- "Min"
+  dataVar <- "Min8D" #name of the variable in the logger data
+  capVar <- "MIN"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -432,7 +432,7 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(##), ])
+  mod <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(284,317,350), ])
 ```
 recheck for outliers
 ```{r}
@@ -453,7 +453,7 @@ more tests: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(##), ]
+  data.sp <- data.sp[-c(284,317,350), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -823,6 +823,16 @@ Geospatial data output
   writeOGR(obj=error_pts, dsn=".", layer = paste0(outptsname), driver="ESRI Shapefile", overwrite_layer = TRUE)
   writeOGR(obj=network, dsn=".", layer = paste0(outnetname), driver="ESRI Shapefile", overwrite_layer = TRUE)
 ```
+reread in spatial data
+```{r}
+
+  outnetname <- paste0(basin, "_", yearPath, "_8D_", var)
+  outptsname <- paste0(basin, "_Error_", yearPath, "_8D_", var)
+  
+  network <- readOGR(dsn='.', layer = outnetname)
+  error_pts <- readOGR(dsn='.', outptsname)
+  
+```
 Animation output
 ```{r, message=FALSE}
 
@@ -872,7 +882,7 @@ Animation output
       title(paste0(longBasin, " 8-day ", longVar, " ", yearPath, " (°C)"), line=-0.9, adj=.80, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5, cex.sub=0.5)
       mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-4, col="white", cex=.5)
    tmp2 <- subplot(
-        plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,22), cex.main=.8, main="Basin mean (+/-SD)", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
+        plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean (+/-SD)", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
         x=grconvertX(c(0.02,0.45), from='npc'), 
         y=grconvertY(c(0.02, 0.20), from='npc'),
         size=c(1,1.5), vadj=0.5, hadj=0.5, 
@@ -882,7 +892,7 @@ Animation output
       arrows(namesnum[1:(i-2)], yplus[1:(i-2)], namesnum[1:(i-2)], yminus[1:(i-2)], length=0, lwd=5, code=3, lend=0, col="gray20")
       par(op)
       tmp2 <- subplot(
-        plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,22), cex.main=.8, main="Basin mean (+/-SD)", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
+        plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean (+/-SD)", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
         x=grconvertX(c(0.02,0.45), from='npc'), 
         y=grconvertY(c(0.02, 0.20), from='npc'),
         size=c(1,1.5), vadj=0.5, hadj=0.5, 
@@ -897,7 +907,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Tuc_2013_8D_Max.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Tuc_2013_8D_Min.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
