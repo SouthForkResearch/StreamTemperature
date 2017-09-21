@@ -1,5 +1,5 @@
 ---
-title: "Tucannon 2011 Mean"
+title: "Tucannon 2011 Min"
 output: html_notebook
 ---
 
@@ -44,10 +44,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mn"
-  longVar <- "Mean"
-  dataVar <- "Mn8D" #name of the variable in the logger data
-  capVar <- "MEAN"
+  var <- "Min"
+  longVar <- "Min"
+  dataVar <- "Min8D" #name of the variable in the logger data
+  capVar <- "MIN"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -549,7 +549,7 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.fall[-c(90), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d, data=data.fall[-c(90), ])
 ```
 recheck for outliers
 ```{r}
@@ -644,8 +644,9 @@ plot the full year of predicted v observed
   colnames(pred.y) <- c("Y", "PredY", "JulDay", "Season", "Year")
   
   {plot(pred.y$PredY, pred.y$Y, pch=16, col="blue", main=paste0(var, " 8-day stream temp ", basin, " ", yearPath), xlab="Predicted", ylab="Observed")
-  abline(0,1)}
-  #
+  abline(0,1)
+  abline(lm(pred.y$Y~ pred.y$PredY), col="blue")}
+  
 ```
 full year fit metrics
 ```{r}
@@ -899,7 +900,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Tuc_2011_8D_Mn.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Tuc_2011_8D_Min.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
