@@ -1,5 +1,5 @@
 ---
-title: "Tucannon 2014 Mean"
+title: "Tucannon 2014 Max"
 output: html_notebook
 ---
 
@@ -44,10 +44,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mn"
-  longVar <- "Mean"
-  dataVar <- "Mn8D" #name of the variable in the logger data
-  capVar <- "MEAN"
+  var <- "Mx"
+  longVar <- "Max"
+  dataVar <- "Mx8D" #name of the variable in the logger data
+  capVar <- "MAX"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -432,29 +432,28 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(171,173,179,155), ])
+  mod <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(173), ])
 ```
 recheck for outliers
 ```{r}
   outlierTest(mod)
-```
-plot model diagnostics
-```{r}
-  plot(mod)
 ```
 recheck assumptions
 ```{r}
   gvmodel <- gvlma(mod)
   summary(gvmodel)
 ```
-
+plot model diagnostics
+```{r}
+  plot(mod)
+```
 more tests: qqplot
 ```{r}
   qqPlot(mod, main="QQ Plot Spring Leg")
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(171,173,179,155), ]
+  data.sp <- data.sp[-c(173), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -546,7 +545,7 @@ check for outliers
 ```{r}
   outlierTest(mod)
 ```
-rerun w/o outliers
+rerun w/o outliers (if necessary)
 ```{r}
   mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.fall[-c(##), ])
 ```
@@ -632,9 +631,9 @@ write out predicted, coeffs, & metrics
   metrics_out[2,6] <- length(y)
 
   
-  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=T)
+  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=NA)
   
-  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=T)
+  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=NA)
   
 ```
 plot the full year of predicted v observed
@@ -869,7 +868,7 @@ Animation output
       title(paste0(longBasin, " 8-day ", longVar, " ", yearPath, " (°C)"), line=-0.9, adj=.80, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5, cex.sub=0.5)
       mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-4, col="white", cex=.5)
    tmp2 <- subplot(
-        plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean (+/-SD)", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
+        plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,22), cex.main=.8, main="Basin mean (+/-SD)", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
         x=grconvertX(c(0.02,0.45), from='npc'), 
         y=grconvertY(c(0.02, 0.20), from='npc'),
         size=c(1,1.5), vadj=0.5, hadj=0.5, 
@@ -879,7 +878,7 @@ Animation output
       arrows(namesnum[1:(i-2)], yplus[1:(i-2)], namesnum[1:(i-2)], yminus[1:(i-2)], length=0, lwd=5, code=3, lend=0, col="gray20")
       par(op)
       tmp2 <- subplot(
-        plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean (+/-SD)", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
+        plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,22), cex.main=.8, main="Basin mean (+/-SD)", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
         x=grconvertX(c(0.02,0.45), from='npc'), 
         y=grconvertY(c(0.02, 0.20), from='npc'),
         size=c(1,1.5), vadj=0.5, hadj=0.5, 
@@ -894,7 +893,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Tuc_2014_8D_Mn.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Tuc_2014_8D_Max.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}

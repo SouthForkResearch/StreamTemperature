@@ -1,5 +1,5 @@
 ---
-title: "Tucannon 2014 Mean"
+title: "Tucannon 2014 Min"
 output: html_notebook
 ---
 
@@ -44,10 +44,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mn"
-  longVar <- "Mean"
-  dataVar <- "Mn8D" #name of the variable in the logger data
-  capVar <- "MEAN"
+  var <- "Min"
+  longVar <- "Min"
+  dataVar <- "Min8D" #name of the variable in the logger data
+  capVar <- "MIN"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -432,29 +432,28 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(171,173,179,155), ])
+  mod <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(151,153,170,171,173,179), ])
 ```
 recheck for outliers
 ```{r}
   outlierTest(mod)
-```
-plot model diagnostics
-```{r}
-  plot(mod)
 ```
 recheck assumptions
 ```{r}
   gvmodel <- gvlma(mod)
   summary(gvmodel)
 ```
-
+plot model diagnostics
+```{r}
+  plot(mod)
+```
 more tests: qqplot
 ```{r}
   qqPlot(mod, main="QQ Plot Spring Leg")
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(171,173,179,155), ]
+  data.sp <- data.sp[-c(151,153,170,171,173,179), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -525,7 +524,7 @@ Fall data model
   plot(x, y, main="fall")
 ```
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d)
+  mod <- lm(y ~ x + I(x^2) + z + e)
   sum_mod <- summary(mod)
   sum_mod
 ```
@@ -546,7 +545,7 @@ check for outliers
 ```{r}
   outlierTest(mod)
 ```
-rerun w/o outliers
+rerun w/o outliers (if necessary)
 ```{r}
   mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.fall[-c(##), ])
 ```
@@ -596,7 +595,7 @@ LOO PRESS stats
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + z + e + d, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + z + e, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
 ```
@@ -621,7 +620,7 @@ write out predicted, coeffs, & metrics
   coeffs_out[2,3] <- coeffs[3,1]
   coeffs_out[2,4] <- coeffs[4,1]
   coeffs_out[2,5] <- coeffs[5,1]
-  coeffs_out[2,6] <- coeffs[6,1]
+  coeffs_out[2,6] <- 0
   coeffs_out[2,7] <- 0
   
   metrics_out[2,1] <- sum_mod$adj.r.squared
@@ -632,9 +631,9 @@ write out predicted, coeffs, & metrics
   metrics_out[2,6] <- length(y)
 
   
-  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=T)
+  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=NA)
   
-  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=T)
+  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=NA)
   
 ```
 plot the full year of predicted v observed
@@ -820,6 +819,16 @@ Geospatial data output
   writeOGR(obj=error_pts, dsn=".", layer = paste0(outptsname), driver="ESRI Shapefile", overwrite_layer = TRUE)
   writeOGR(obj=network, dsn=".", layer = paste0(outnetname), driver="ESRI Shapefile", overwrite_layer = TRUE)
 ```
+reread in spatial data
+```{r}
+
+  outnetname <- paste0(basin, "_", yearPath, "_8D_", var)
+  outptsname <- paste0(basin, "_Error_", yearPath, "_8D_", var)
+  
+  network <- readOGR(dsn='.', layer = outnetname)
+  error_pts <- readOGR(dsn='.', outptsname)
+  
+```
 Animation output
 ```{r, message=FALSE}
 
@@ -894,7 +903,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Tuc_2014_8D_Mn.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Tuc_2014_8D_Min.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
