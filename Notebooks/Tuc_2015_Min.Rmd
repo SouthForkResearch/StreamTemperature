@@ -818,6 +818,16 @@ Geospatial data output
   writeOGR(obj=error_pts, dsn=".", layer = paste0(outptsname), driver="ESRI Shapefile", overwrite_layer = TRUE)
   writeOGR(obj=network, dsn=".", layer = paste0(outnetname), driver="ESRI Shapefile", overwrite_layer = TRUE)
 ```
+reread in spatial data
+```{r}
+
+  outnetname <- paste0(basin, "_", yearPath, "_8D_", var)
+  outptsname <- paste0(basin, "_Error_", yearPath, "_8D_", var)
+  
+  network <- readOGR(dsn='.', layer = outnetname)
+  error_pts <- readOGR(dsn='.', outptsname)
+  
+```
 Animation output
 ```{r, message=FALSE}
 
