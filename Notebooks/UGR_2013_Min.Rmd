@@ -1,5 +1,5 @@
 ---
-title: "Upper Grande Ronde 2013 Mean"
+title: "Upper Grande Ronde 2013 Min"
 output: html_notebook
 ---
 
@@ -47,10 +47,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mn"
-  longVar <- "Mean"
-  dataVar <- "Mn8D" #name of the variable in the logger data
-  capVar <- "MEAN"
+  var <- "Min"
+  longVar <- "Min"
+  dataVar <- "Min8D" #name of the variable in the logger data
+  capVar <- "MIN"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -187,21 +187,19 @@ Discharge data formatting
   dates[,1] <- 1:365
   colnames(dates) <- c("Days")
   
-  SiteID <- unique(Dv.in$site_no)
-  SiteID <- as.matrix(SiteID)
   Dv.8Day.out <- data.frame (mup = NULL)
   
-  for (i in SiteID) 
-    { 
-      Dv.site <- Dv.in[Dv.in$site_no == i,]
+ 
+      Dv.site <- Dv.in
       full.year <- merge(dates, Dv.site, by.x = "Days", by.y = "JulDay", all.x = TRUE)
+      
       eightday <- rollapply(full.year$Dv, width = 8, FUN = mean, na.rm = T, fill = NA, align = c("left"))
       eightday <- as.matrix(eightday)
       full.year$Dv8D<- eightday
       full.year$Dv8D[361] <- mean(full.year$Dv[361:365 ])
-      Dv.8Day.out <- rbind(Dv.8Day.out, full.year)
       
-    }
+      Dv.8Day.out <- rbind(Dv.8Day.out, full.year)
+   
   
   ind <- apply(Dv.8Day.out, 1, function(x) !any(is.na(x)))
   Dv.8Day.out <- Dv.8Day.out[ind,]
@@ -210,7 +208,7 @@ write.csv(Dv.8Day.out, paste0("../", basin, "_", yearPath, "_Dv_8Day", ".csv"), 
 
 ```
 Model building
-```{r}
+```{r, message=FALSE}
   Log.in <- read.csv(paste0("../../", basin, "_logger_8D_", yearPath, ".csv"), stringsAsFactors = FALSE)
  
 
@@ -437,34 +435,34 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.sp[-c(1116,1324,1346,1147,1332,1112,1156,1115,1485,1341,1383,1409,1391,1345,1408,1342,1048), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.sp[-c(1520,1504,1519,1522,1330,1488,1116,1389,1517,1492,1147), ])
 ```
 recheck for outliers
 ```{r}
   outlierTest(mod)
+```
+plot model diagnostics
+```{r}
+  plot(mod)
 ```
 recheck assumptions
 ```{r}
   gvmodel <- gvlma(mod)
   summary(gvmodel)
 ```
-plot model diagnostics
-```{r}
-  plot(mod)
-```
+
 more tests: qqplot
 ```{r}
   qqPlot(mod, main="QQ Plot Spring Leg")
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(1116,1324,1346,1147,1332,1112,1156,1115,1485,1341,1383,1409,1391,1345,1408,1342,1048), ]
+  data.sp <- data.sp[-c(1520,1504,1519,1522,1330,1488,1116,1389,1517,1492,1147), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
   e <- data.sp$e
   d <- data.sp$d
-  
   mod <- lm(y ~ x + I(x^2) + z + e + d + d*z)
   sum_mod <- summary(mod)
 ```
@@ -551,7 +549,7 @@ check for outliers
 ```{r}
   outlierTest(mod)
 ```
-rerun w/o outliers (if necessary)
+rerun w/o outliers
 ```{r}
   mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.fall[-c(##), ])
 ```
@@ -658,7 +656,7 @@ full year fit metrics
   summary(fit)
 ```
 This part applies the model coefficients to the LST to generate 8-day temp estimates 
-```{r}
+```{r, message=FALSE}
   
   elev.in <- read.csv(paste0("../../", basin, "_rca_elev.csv"), stringsAsFactors = F)
    
@@ -718,10 +716,10 @@ Plot orig data
 ```
 Plot some reaches to take a peek
 ```{r}  
-  {plot(namesnum, LogPred.out[562,1:46])
+  {plot(namesnum, LogPred.out[635,1:46])
   points(namesnum, LogPred.out[1000, 1:46], pch=16, col="blue")
   points(namesnum, LogPred.out[1234, 1:46], pch=16, col="green")
-  points(namesnum, LogPred.out[635, 1:46], pch=16, col="red")
+  points(namesnum, LogPred.out[562, 1:46], pch=16, col="red")
   points(namesnum, LogPred.out[800, 1:46], pch=16, col="lightblue")}
   
 ```
@@ -851,7 +849,7 @@ Animation output
       
       namey <- gsub(paste0("T", var, yrPath, "_"), "", colnames(network@data)[i])
       
-      filename <- paste0(modelPath, "/graphics/", namer[i-2], ".png", sep="")
+      filename <- paste0(modelPath, "graphics/", namer[i-2], ".png", sep="")
       png(filename=filename, res = 300, width = 1500, height = 1500, units = "px", bg="black")
       
       u <- unique(network@data[,i])
@@ -907,7 +905,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png UGR_2014_8D_Mn.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png UGR_2013_8D_Min.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
