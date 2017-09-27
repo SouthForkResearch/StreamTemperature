@@ -1,5 +1,5 @@
 ---
-title: "Upper Grande Ronde 2011 Mean"
+title: "Upper Grande Ronde 2011 Mzx"
 output: html_notebook
 ---
 
@@ -47,10 +47,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mn"
-  longVar <- "Mean"
-  dataVar <- "Mn8D" #name of the variable in the logger data
-  capVar <- "MEAN"
+  var <- "Mx"
+  longVar <- "Max"
+  dataVar <- "Mx8D" #name of the variable in the logger data
+  capVar <- "MAX"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -315,15 +315,49 @@ Model diagnostics
 ```{r}
   outlierTest(mod)
 ```
+rerun w/o outliers
+```{r}
+  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=NoNA.xyz[-c(##), ])
+```
+recheck for outliers
+```{r}
+  outlierTest(mod)
+```
+recheck assumptions
+```{r}
+  gvmodel <- gvlma(mod)
+  summary(gvmodel)
+```
 ```{r}
   qqPlot(mod, main="QQ Plot Full Year")
 ```
 Assumptions:
 ```{r}
-plot(mod)
+  plot(mod)
 ```
 ```{r}
   spreadLevelPlot(mod)
+```
+if outliers need to be removed (otherwise skip)
+```{r}
+  NoNA.xyz <- NoNA.xyz[-c(##), ]
+  y <- NoNA.xyz$y
+  x <- NoNA.xyz$x
+  z <- NoNA.xyz$z
+  e <- NoNA.xyz$e
+  d <- NoNA.xyz$d
+  
+  mod <- lm(y ~ x + I(x^2)+ e)
+  sum_mod <- summary(mod)
+```
+format the data for prediction output 
+```{r}
+  pressstat_sum <- PRESS(sum_mod, verbose = "FALSE")
+  
+  coeffs <- as.matrix(coefficients(mod))
+  pred.y <- predict(mod)
+  
+  pred.y[pred.y < -0.5] = -0.5
 ```
 ```{r}
   plot(pred.y, mod$residuals, main="Model diagnostics Full Year", xlab="Predicted", ylab="Residuals")
@@ -909,7 +943,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png UGR_2011_8D_Mn.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png UGR_2011_8D_Max.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
