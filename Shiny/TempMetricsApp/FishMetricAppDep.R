@@ -57,7 +57,7 @@ ui <- fluidPage(
                   options = list(placeholder = 'Year')),
       selectizeInput(inputId = "basin",
                   label = "Choose Basin",
-                  choices = c("", "Asotin", "Entiat", "JohnDay", "Lemhi", "Methow", "Minam-Wallowa", "MFSalmon-PantherCreek", "Pahsimeroi", "Potlatch", "Secesh", "SForkSalmon", "Tucannon", "Wenatchee", "YankeeFork"),
+                  choices = c("", "Asotin", "Entiat", "JohnDay", "Lemhi", "Methow", "Minam-Wallowa", "MFSalmon-PantherCreek", "Pahsimeroi", "Potlatch", "Secesh", "SForkSalmon", "Tucannon", "UpperGrandeRonde", "Wenatchee", "YankeeFork"),
                   selected = NULL,
                   options = list(placeholder = 'Basin')),
       selectInput(inputId = "metric",
@@ -131,11 +131,9 @@ server <- function(input, output) {
       basinName <- "JD"
     } else if (longBasin == "Minam-Wallowa"){
       basinName <- "MinW"
-    } else if (longBasin == "Potlatch"){
-      basinName <- "Pot"
     } else if (longBasin == "SForkSalmon"){
       basinName <- "SFS"
-    } else if (longBasin == "UpperGrandRonde"){
+    } else if (longBasin == "UpperGrandeRonde"){
       basinName <- "UGR"
     } else if (longBasin == "UpperSalmon"){
       basinName <- "USal"
@@ -143,6 +141,8 @@ server <- function(input, output) {
       basinName <- "MinW"
     } else if (longBasin == "YankeeFork"){
       basinName <- "YF"
+    } else if (longBasin == "UpperGrandeRonde"){
+      basinName <- "UGR"
     } else {
       basinName <- substr(longBasin, start=1, stop=3)
     }
@@ -151,6 +151,7 @@ server <- function(input, output) {
     
     netname <- paste(basinName, "_", yearPath, "_8D_", tVar, sep = "")
     modelPath <- paste0("StreamTemperatureModels/", longBasin, "/", yearPath, "/", var, sep = "")
+    
     filesInfo <- drop_dir(paste0(modelPath, sep = ""))
     filesInfo <- data.table(filesInfo)
     validate(
@@ -177,7 +178,7 @@ server <- function(input, output) {
     end <- which(colnames(network@data) == maxDate)
     
     rcaName <- paste0(basinName, "_", "RCAID")
-    rcas <- drop_read_csv(paste0("StreamTemperatureModels/", longBasin, "/", rcaName, ".csv"))
+    rcas <- drop_read_csv(paste0("StreamTemperatureModels/", longBasin, "/", rcaName, ".csv"),)
     
     rcaList <- rcas$RCAID
     net = network
