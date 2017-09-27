@@ -1,5 +1,5 @@
 ---
-title: "Upper Grande Ronde 2012 Mean"
+title: "Upper Grande Ronde 2012 Max"
 output: html_notebook
 ---
 
@@ -47,10 +47,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mn"
-  longVar <- "Mean"
-  dataVar <- "Mn8D" #name of the variable in the logger data
-  capVar <- "MEAN"
+  var <- "Mx"
+  longVar <- "Max"
+  dataVar <- "Mx8D" #name of the variable in the logger data
+  capVar <- "MAX"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -187,21 +187,19 @@ Discharge data formatting
   dates[,1] <- 1:365
   colnames(dates) <- c("Days")
   
-  SiteID <- unique(Dv.in$site_no)
-  SiteID <- as.matrix(SiteID)
   Dv.8Day.out <- data.frame (mup = NULL)
   
-  for (i in SiteID) 
-    { 
-      Dv.site <- Dv.in[Dv.in$site_no == i,]
+ 
+      Dv.site <- Dv.in
       full.year <- merge(dates, Dv.site, by.x = "Days", by.y = "JulDay", all.x = TRUE)
+      
       eightday <- rollapply(full.year$Dv, width = 8, FUN = mean, na.rm = T, fill = NA, align = c("left"))
       eightday <- as.matrix(eightday)
       full.year$Dv8D<- eightday
       full.year$Dv8D[361] <- mean(full.year$Dv[361:365 ])
-      Dv.8Day.out <- rbind(Dv.8Day.out, full.year)
       
-    }
+      Dv.8Day.out <- rbind(Dv.8Day.out, full.year)
+   
   
   ind <- apply(Dv.8Day.out, 1, function(x) !any(is.na(x)))
   Dv.8Day.out <- Dv.8Day.out[ind,]
@@ -210,7 +208,7 @@ write.csv(Dv.8Day.out, paste0("../", basin, "_", yearPath, "_Dv_8Day", ".csv"), 
 
 ```
 Model building
-```{r}
+```{r, message=FALSE}
   Log.in <- read.csv(paste0("../../", basin, "_logger_8D_", yearPath, ".csv"), stringsAsFactors = FALSE)
  
 
@@ -260,6 +258,7 @@ Model building
   NoNA.xyz <- read.csv(paste0(basin, "_", yearPath, "_8Day_", var, "_model_data.csv"), stringsAsFactors = FALSE)
   
   NoNA.xyz <- orderBy(~z, NoNA.xyz)
+  NoNA.xyz <- NoNA.xyz[NoNA.xyz$SiteName != "ORW03446-084462",]
   maxrow <- which.max(NoNA.xyz$y)
   data.sp <- NoNA.xyz[1:(maxrow-1),]
   rownames(data.sp) <- 1:dim(data.sp)[1]
@@ -294,8 +293,9 @@ plot the data
   x <- NoNA.xyz$x
   z <- NoNA.xyz$z
   e <- NoNA.xyz$e
+  d <- NoNA.xyz$d
   
-  mod <- lm(y ~ x + I(x^2) + e)
+  mod <- lm(y ~ x + I(x^2) + e + d + d*z)
   sum_mod <- summary(mod)
   sum_mod
 ``` 
@@ -442,15 +442,16 @@ recheck for outliers
 ```{r}
   outlierTest(mod)
 ```
+plot model diagnostics
+```{r}
+  plot(mod)
+```
 recheck assumptions
 ```{r}
   gvmodel <- gvlma(mod)
   summary(gvmodel)
 ```
-plot model diagnostics
-```{r}
-  plot(mod)
-```
+
 more tests: qqplot
 ```{r}
   qqPlot(mod, main="QQ Plot Spring Leg")
@@ -463,7 +464,6 @@ if outliers need to be removed (otherwise skip)
   z <- data.sp$z
   e <- data.sp$e
   d <- data.sp$d
-  
   mod <- lm(y ~ x + I(x^2) + z + e + d + d*z)
   sum_mod <- summary(mod)
 ```
@@ -717,10 +717,10 @@ Plot orig data
 ```
 Plot some reaches to take a peek
 ```{r}  
-  {plot(namesnum, LogPred.out[562,1:46])
+  {plot(namesnum, LogPred.out[635,1:46])
   points(namesnum, LogPred.out[1000, 1:46], pch=16, col="blue")
   points(namesnum, LogPred.out[1234, 1:46], pch=16, col="green")
-  points(namesnum, LogPred.out[635, 1:46], pch=16, col="red")
+  points(namesnum, LogPred.out[562, 1:46], pch=16, col="red")
   points(namesnum, LogPred.out[800, 1:46], pch=16, col="lightblue")}
   
 ```
@@ -844,13 +844,12 @@ Animation output
   fix4 <- classIntervals(means, n = 10, style = "fixed",fixedBreaks=c(-1,4,8,10,12,14,16,18,20,22))
   fix4.colors <- findColours(fix4,pal=seis)
   
-  
   for (i in 3:48)
     {
       
       namey <- gsub(paste0("T", var, yrPath, "_"), "", colnames(network@data)[i])
       
-      filename <- paste0(modelPath, "/graphics/", namer[i-2], ".png", sep="")
+      filename <- paste0(modelPath, "graphics/", namer[i-2], ".png", sep="")
       png(filename=filename, res = 300, width = 1500, height = 1500, units = "px", bg="black")
       
       u <- unique(network@data[,i])
@@ -873,7 +872,7 @@ Animation output
       
     
     legend(x=grconvertX(c(0.8, 0.9), from='npc'), 
-             y=grconvertY(c(0.72, 0.92), from='npc'), fill = attr(fix3.colors, "palette"), title="°C", legend = c("0-4","4-8","8-10","10-12","12-14","14-16","16-18","18-20","20-22","22+"), bty = "n", cex=.5, inset=c(.1,0), text.col="white");
+             y=grconvertY(c(0.72, 0.92), from='npc'), fill =  c("#0024E3","#0087CD","#16F45A","#73FF1A","#FFE200","#FFB700","#FF6A00","#FF1D00","#D00000","#AA0000"), title="°C", legend = c("0-4","4-8","8-10","10-12","12-14","14-16","16-18","18-20","20-22","22+"), bty = "n", cex=.5, inset=c(.1,0), text.col="white");
       legend(x=grconvertX(c(0.8, 0.9), from='npc'), 
              y=grconvertY(c(0.4, 0.55), from='npc'),, title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", pch=16, pt.cex=c(0.5, 0.75, 1.0, 1.25), col = "gray40", cex=.5, text.col="white");
          
@@ -906,7 +905,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png UGR_2013_8D_Mn.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png UGR_2012_8D_Max.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
