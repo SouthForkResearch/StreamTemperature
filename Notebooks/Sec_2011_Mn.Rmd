@@ -1,5 +1,5 @@
 ---
-title: "Secesh Max 2015"
+title: "Secesh Mean 2011"
 output: html_notebook
 ---
 
@@ -35,8 +35,8 @@ library(uuid)
   basin <- "Sec"
   midBasin <- "Secesh"
   longBasin <- "Secesh"
-  yrPath <- "15"
-  yearPath <- "2015"
+  yrPath <- "11"
+  yearPath <- "2011"
   
   nameBasin <- "Secesh" #this is from the Projects XML list of approved names
   
@@ -44,10 +44,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mx"
-  longVar <- "Max"
-  dataVar <- "Mx8D" #name of the variable in the logger data
-  capVar <- "MAX"
+  var <- "Mn"
+  longVar <- "Mean"
+  dataVar <- "Mn8D" #name of the variable in the logger data
+  capVar <- "MEAN"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -292,7 +292,7 @@ plot the data
   e <- NoNA.xyz$e
   d <- NoNA.xyz$d
   
-  mod <- lm(y ~ x + I(x^2) + e + d + d*z)
+  mod <- lm(y ~ x + I(x^2) + e)
   sum_mod <- summary(mod)
   sum_mod
 ``` 
@@ -311,6 +311,19 @@ Model diagnostics
 ```{r}
   outlierTest(mod)
 ```
+rerun w/o outliers
+```{r}
+  mod <- lm(y ~ x + I(x^2) + e + d, data=NoNA.xyz[-c(##), ])
+```
+recheck for outliers
+```{r}
+  outlierTest(mod)
+```
+recheck assumptions
+```{r}
+  gvmodel <- gvlma(mod)
+  summary(gvmodel)
+```
 ```{r}
   qqPlot(mod, main="QQ Plot Full Year")
 ```
@@ -321,8 +334,16 @@ plot(mod)
 ```{r}
   spreadLevelPlot(mod)
 ```
+if outliers need to be removed (otherwise skip)
 ```{r}
-  plot(pred.y, mod$residuals, main="Model diagnostics Full Year", xlab="Predicted", ylab="Residuals")
+  NoNA.xyz <- NoNA.xyz[-c(##), ]
+  y <- NoNA.xyz$y
+  x <- NoNA.xyz$x
+  z <- NoNA.xyz$z
+  e <- NoNA.xyz$e
+  d <- NoNA.xyz$d
+  mod <- lm(y ~ x + I(x^2) + e + d)
+  sum_mod <- summary(mod)
 ```
 ```{r, message=FALSE}
   pressstat_sum <- PRESS(mod, verbose = "FALSE")
@@ -334,6 +355,7 @@ plot(mod)
   detach("package:pls", unload=TRUE)
   
   coeffs <- as.matrix(coefficients(sum_mod))
+  pred.y <- predict(mod)
   
   pred.out <- matrix(nrow=length(pred.y), ncol=5)
   pred.out[,1] <- y
@@ -364,7 +386,7 @@ Output tables formatting for coeffs and metrics
   coeffs_out[1,3] <- coeffs[3,1]
   coeffs_out[1,4] <- 0
   coeffs_out[1,5] <- coeffs[4,1]
-  coeffs_out[1,6] <- coeffs[5,1]
+  coeffs_out[1,6] <- 0
   coeffs_out[1,7] <- 0
   
   metrics_out[1,1] <- sum_mod$adj.r.squared
@@ -437,7 +459,7 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(##), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.sp[-c(##), ])
 ```
 recheck for outliers
 ```{r}
@@ -463,6 +485,7 @@ if outliers need to be removed (otherwise skip)
   x <- data.sp$x
   z <- data.sp$z
   e <- data.sp$e
+  d <- data.sp$d
   mod <- lm(y ~ x + I(x^2) + z + e + d + d*z)
   sum_mod <- summary(mod)
 ```
@@ -553,6 +576,10 @@ rerun w/o outliers (if necessary)
 ```{r}
   mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.fall[-c(##), ])
 ```
+recheck for outliers
+```{r}
+  outlierTest(mod)
+```
 recheck assumptions
 ```{r}
   gvmodel <- gvlma(mod)
@@ -565,11 +592,6 @@ plot model diagnostics
 more diagonstics: qqplot
 ```{r}
   qqPlot(mod, main="QQ Plot Fall Leg")
-```
-Look at the residuals
-```{r}
-  spreadLevelPlot(mod)
-  plot(pred.y, mod$residuals, main="Model diagnostics Fall Leg", xlab="Predicted", ylab="Residuals")
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
@@ -896,7 +918,7 @@ This system call builds an mpeg out of the still graphics
 ```{r, message=FALSE}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Sec_2015_8D_Max.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Sec_2011_8D_Mn.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}

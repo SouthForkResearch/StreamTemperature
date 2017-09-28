@@ -1,5 +1,5 @@
 ---
-title: "Secesh Max 2015"
+title: "Secesh Max 2013"
 output: html_notebook
 ---
 
@@ -35,8 +35,8 @@ library(uuid)
   basin <- "Sec"
   midBasin <- "Secesh"
   longBasin <- "Secesh"
-  yrPath <- "15"
-  yearPath <- "2015"
+  yrPath <- "13"
+  yearPath <- "2013"
   
   nameBasin <- "Secesh" #this is from the Projects XML list of approved names
   
@@ -437,7 +437,7 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(##), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.sp[-c(400), ])
 ```
 recheck for outliers
 ```{r}
@@ -458,11 +458,12 @@ more tests: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(##), ]
+  data.sp <- data.sp[-c(400), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
   e <- data.sp$e
+  d <- data.sp$d
   mod <- lm(y ~ x + I(x^2) + z + e + d + d*z)
   sum_mod <- summary(mod)
 ```
@@ -528,7 +529,7 @@ Fall data model
   plot(x, y, main="fall")
 ```
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d)
+  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z)
   sum_mod <- summary(mod)
   sum_mod
 ```
@@ -551,7 +552,11 @@ check for outliers
 ```
 rerun w/o outliers (if necessary)
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.fall[-c(##), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.fall[-c(8,11), ])
+```
+recheck for outliers
+```{r}
+  outlierTest(mod)
 ```
 recheck assumptions
 ```{r}
@@ -566,14 +571,9 @@ more diagonstics: qqplot
 ```{r}
   qqPlot(mod, main="QQ Plot Fall Leg")
 ```
-Look at the residuals
-```{r}
-  spreadLevelPlot(mod)
-  plot(pred.y, mod$residuals, main="Model diagnostics Fall Leg", xlab="Predicted", ylab="Residuals")
-```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.fall <- data.fall[-c(##), ]
+  data.fall <- data.fall[-c(8,11), ]
   y <- data.fall$y
   x <- data.fall$x
   z <- data.fall$z
@@ -597,7 +597,7 @@ LOO PRESS stats
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + z + e + d, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + z + e + d + d*z, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
 ```
@@ -618,7 +618,7 @@ write out predicted, coeffs, & metrics
   coeffs_out[2,4] <- coeffs[4,1]
   coeffs_out[2,5] <- coeffs[5,1]
   coeffs_out[2,6] <- coeffs[6,1]
-  coeffs_out[2,7] <- 0
+  coeffs_out[2,7] <- coeffs[7,1]
   
   metrics_out[2,1] <- sum_mod$adj.r.squared
   metrics_out[2,2] <- post_mod$sigma
@@ -896,7 +896,7 @@ This system call builds an mpeg out of the still graphics
 ```{r, message=FALSE}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Sec_2015_8D_Max.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Sec_2013_8D_Mx.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
