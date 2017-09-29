@@ -163,19 +163,22 @@ server <- function(input, output) {
     filesInfo <- drop_dir(paste0(modelPath, sep = ""))
     filesInfo <- data.table(filesInfo)
     validate(
-      need(try(!is.null(filesInfo$path) ), "No model data for that basin/year/metric exists, please choose another.")
+      need(try(!is.null(filesInfo$path_display) ), "No model data for that basin/year/metric exists, please choose another.")
     )
     filesInfo <- filesInfo[path_display %like% netname]
     dest=tempdir()
     drop_getShp <- function(my.file, dest=tempdir()){
-      localfile = paste0(dest, "/", basename(my.file))
-      drop_get(my.file, local_file = localfile, overwrite = TRUE)
+      localfile = paste0(dest, "/", basename(as.character(my.file)))
+      drop_download(my.file, local_path = localfile, overwrite = TRUE)
     }
     
     for(i in 1:dim(filesInfo)[1]){
-      drop_getShp(filesInfo$path_display[i])
+      drop_getShp(filesInfo[,"path_display"][i])
     }
     
+    for(i in 1:dim(filesInfo)[1]){
+      drop_getShp(filesList[i])
+    }
     
     network <- readOGR(dsn=dest, layer=netname)
     
