@@ -1,5 +1,5 @@
 ---
-title: "John Day 2015 Min"
+title: "John Day 2014 Max"
 output: html_notebook
 ---
 
@@ -33,20 +33,20 @@ library(classInt)
 ```
 ```{r, message=FALSE}
 
-   basin <- "jd"
+   basin <- "JD"
   midBasin <- "JohnDay"
   longBasin <- "John_Day"
-  yrPath <- "15"
-  yearPath <- "2015"
+  yrPath <- "14"
+  yearPath <- "2014"
   dataPath <- "D:/OneDrive/work/research/CHaMP/GIS/LST/LST_s1_"
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   mainPath2 <- "D:/OneDrive/work/research/CHaMP/GIS/LST/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Min"
-  longVar <- "Min"
-  dataVar <- "Min8Day" #name of the variable in the logger data
-  capVar <- "MIN"
+  var <- "Mx"
+  longVar <- "Max"
+  dataVar <- "Max8Day" #name of the variable in the logger data
+  capVar <- "MAX"
   
 
  
@@ -216,7 +216,7 @@ write.csv(Dv.8Day.out, paste0("../", basin, "_", yearPath, "_Dv_8Day", ".csv"), 
 Logger data formatting
 ```{r}
   
-  Log.in <- read.csv(paste0("../../", basin, "_logger_8Day_", yearPath, ".csv"), stringsAsFactors = FALSE)
+  Log.in <- read.csv(paste0("../../", basin, "_logger_8D_", yearPath, ".csv"), stringsAsFactors = FALSE)
 
   ID.in <- read.csv(paste0("../../", basin, "_CHaMP_sites_RCA_HUC.csv"), stringsAsFactors = FALSE) 
 
@@ -436,7 +436,7 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(##), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.sp[-c(##), ])
 ```
 recheck for outliers
 ```{r}
@@ -461,7 +461,7 @@ if outliers need to be removed (otherwise skip)
   e <- data.sp$e
   d <- data.sp$d
   
-  mod <- lm(y ~ x + I(x^2) + z + e + d)
+  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z)
   sum_mod <- summary(mod)
 ```
 format the data for prediction output 
@@ -524,7 +524,7 @@ Fall data model
   plot(x, y, main="fall")
 ```
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z)
+  mod <- lm(y ~ x + I(x^2) + z + e + d)
   sum_mod <- summary(mod)
   sum_mod
 ```
@@ -591,7 +591,7 @@ LOO PRESS stats
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + z + e + d + d*z, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + z + e + d, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
 ```
@@ -612,7 +612,7 @@ write out predicted, coeffs, & metrics
   coeffs_out[2,4] <- coeffs[4,1]
   coeffs_out[2,5] <- coeffs[5,1]
   coeffs_out[2,6] <- coeffs[6,1]
-  coeffs_out[2,7] <- coeffs[7,1]
+  coeffs_out[2,7] <- 0
   
   metrics_out[2,1] <- sum_mod$adj.r.squared
   metrics_out[2,2] <- post_mod$sigma
@@ -719,7 +719,7 @@ Plot some reaches to take a peek
 This parts formats the error by day/site info
 ```{r}
   
-  Log.in <- read.csv(paste0("../../", basin, "_logger_8Day_", yearPath, ".csv"), stringsAsFactors = FALSE)
+  Log.in <- read.csv(paste0("../../", basin, "_logger_8D_", yearPath, ".csv"), stringsAsFactors = FALSE)
 
   ID.in <- read.csv(paste0("../../", basin, "_CHaMP_sites_RCA_HUC.csv"), stringsAsFactors = FALSE) 
 
@@ -926,7 +926,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png JD_2015_8D_Min.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png JD_2014_8D_Max.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
