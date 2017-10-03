@@ -7,6 +7,8 @@ This set of R scripts processes logger data for predictive stream temperature mo
 Created: 21 Feb 2017
 Used for all watersheds and all years by changing the basin names and year paths 
 
+USGS station: 11342500
+
 Stage setting:
 ```{r, message=FALSE}
 library(timeSeries)
@@ -28,6 +30,8 @@ library(raster)
 library(RColorBrewer)
 library(classInt)
 library(uuid)
+```
+```{r}
 
   basin <- "CW"
   midBasin <- "LCW"
@@ -258,18 +262,21 @@ Model building
       {
       RCAID <- ID.in$RCAID[ID.in$SiteID == i]
       
-      Elev <- ID.in$Elev[ID.in$SiteID == i]
-      
-      LST.site <- matrix(ncol=3, nrow=46)
-      LST.site[,1] <- as.numeric(unlist(colnames(LST.in)[1:46]))
-      LST.site[,2] <- unlist(LST.in[RCAID,1:46])
-      LST.site <- data.frame(LST.site)
-      colnames(LST.site) <- c("JulDay", "LST", "Elev")
-      LST.site[3] <- Elev
-      LST.Log.site <- merge(LST.site, Log.site, by.x = "JulDay",by.y = "Days", all.x=TRUE, all.y = FALSE)
-      LST.Log.site <- merge(LST.Log.site, Dv.in, by.x = "JulDay", by.y = "Days", all.x=TRUE, all.y+FALSE)
-      
-      LST.Log.out <- rbind(LST.Log.out, LST.Log.site)
+        if( RCAID %in% LST.in$RCAID)
+        {
+        Elev <- ID.in$Elev[ID.in$SiteID == i]
+        
+        LST.site <- matrix(ncol=3, nrow=46)
+        LST.site[,1] <- as.numeric(unlist(colnames(LST.in)[1:46]))
+        LST.site[,2] <- unlist(LST.in[LST.in$RCAID == RCAID, 1:46])
+        LST.site <- data.frame(LST.site)
+        colnames(LST.site) <- c("JulDay", "LST", "Elev")
+        LST.site[3] <- Elev
+        LST.Log.site <- merge(LST.site, Log.site, by.x = "JulDay",by.y = "Days", all.x=TRUE, all.y = FALSE)
+        LST.Log.site <- merge(LST.Log.site, Dv.in, by.x = "JulDay", by.y = "Days", all.x=TRUE, all.y+FALSE)
+        
+        LST.Log.out <- rbind(LST.Log.out, LST.Log.site)
+        }
       }
     }
   
@@ -294,6 +301,16 @@ Correlation matrix
 ```{r}
 cor.full <- NoNA.xyz[1:5]
 cor(cor.full)
+```
+Spring
+```{r}
+cor.sp <- data.sp[1:5]
+cor(cor.sp)
+```
+Fall
+```{r}
+cor.fall <- data.fall[1:5]
+cor(cor.fall)
 ```
 plot the data
 ```{r}
@@ -347,15 +364,13 @@ plot(mod)
 ```{r}
   spreadLevelPlot(mod)
 ```
-```{r}
-  plot(pred.y, mod$residuals, main="Model diagnostics Full Year", xlab="Predicted", ylab="Residuals")
-```
+
 ```{r}
   pressstat_sum <- PRESS(mod, verbose = "FALSE")
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + e, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + e + d, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
   
@@ -398,8 +413,7 @@ Output tables formatting for coeffs and metrics
   metrics_out[1,4] <- RMSEP
   metrics_out[1,5] <- length(unique(NoNA.xyz$SiteName))
   metrics_out[1,6] <- length(y)
-```
-```{r}
+  
   coeffs_out[2,1] <- coeffs[1,1]
   coeffs_out[2,2] <- coeffs[2,1]
   coeffs_out[2,3] <- coeffs[3,1]
@@ -413,22 +427,18 @@ Output tables formatting for coeffs and metrics
   metrics_out[2,4] <- RMSEP
   metrics_out[2,5] <- length(unique(NoNA.xyz$SiteName))
   metrics_out[2,6] <- length(y)
+  
+  
+  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=NA)
+  
+  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=NA)
+  
 ```
-```{r}
-  
-  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=T)
-  
-  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=T)
-  
-```
-####Spring/Fall models
+****Spring/Fall models***
 Spring data model
 ```{r}
- 
-    coeffs_out <- data.frame(Int=numeric(2), bLST=numeric(2), bLST2=numeric(2), bJul=numeric(2), bE=numeric(2), bD=numeric(2))
+  coeffs_out <- data.frame(Int=numeric(2), bLST=numeric(2), bLST2=numeric(2), bJul=numeric(2), bElev=numeric(2), bD=numeric(2), bDJul=numeric(2))
   metrics_out <- data.frame(r2=numeric(2), RMSE=numeric(2), p2=numeric(2), RMSEP=numeric(2), N_Sites=numeric(2), N=numeric(2))
-  rownames(metrics_out) <- c("Spring", "Fall")
-  rownames(coeffs_out) <- c("Spring", "Fall")
   rownames(metrics_out) <- c("Spring", "Fall")
   rownames(coeffs_out) <- c("Spring", "Fall")
 ```
@@ -441,7 +451,7 @@ Spring data model
   plot(x, y, main="Spring data")
 ```
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d)
+  mod <- lm(y ~ x + I(x^2) + z + d)
   sum_mod <- summary(mod)
   sum_mod
 ```
@@ -464,7 +474,7 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d, data=data.sp[-c(962, 959, 1344, 1286, 1283), ])
+  mod <- lm(y ~ x + I(x^2) + z + d, data=data.sp[-c(232), ])
 ```
 recheck for outliers
 ```{r}
@@ -485,13 +495,13 @@ more tests: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(962, 959, 1344, 1286, 1283), ]
+  data.sp <- data.sp[-c(232), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
   e <- data.sp$e
   d <- data.sp$d
-  mod <- lm(y ~ x + I(x^2) + z + e + d)
+  mod <- lm(y ~ x + I(x^2) + z + d)
   sum_mod <- summary(mod)
 ```
 format the data for prediction output 
@@ -506,7 +516,6 @@ format the data for prediction output
 Look at the residuals
 ```{r}
   spreadLevelPlot(mod)
-  plot(pred.y, mod$residuals, main="Model diagnostics Spring Leg", xlab="Predicted", ylab="Residuals")
 ```
 LOO PRESS stats
 ```{r, message=FALSE}
@@ -514,7 +523,7 @@ LOO PRESS stats
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + z +e, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + z + d, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
 ```
@@ -528,14 +537,15 @@ write out predicted, coeffs, & metrics
   pred.out[,4] <- "Spring"
   pred.out[,5] <- yearPath
   colnames(pred.out) <- c("Y", "PredY", "JulDay", "Season", "Year")
-  write.table (x=pred.out,append=F,row.names=F,file=paste0("jk_pred_v_y_", var, "_", basin, "_", yearPath, "_sp_fall.csv"),sep = ",", col.names=F)  
+  write.table (x=pred.out,append=F,row.names=F,file=paste0("jk_pred_v_y_", var, "_", basin, "_", yearPath, "_full_year.csv"),sep = ",", col.names=F)  
   
   coeffs_out[1,1] <- coeffs[1,1]
   coeffs_out[1,2] <- coeffs[2,1]
   coeffs_out[1,3] <- coeffs[3,1]
   coeffs_out[1,4] <- coeffs[4,1]
-  coeffs_out[1,5] <- coeffs[5,1]
-  coeffs_out[1,6] <- coeffs[6,1]
+  coeffs_out[1,5] <- 0
+  coeffs_out[1,6] <- coeffs[5,1]
+  coeffs_out[1,7] <- 0
   
   
   metrics_out[1,1] <- sum_mod$adj.r.squared
@@ -649,16 +659,17 @@ write out predicted, coeffs, & metrics
   metrics_out[2,4] <- RMSEP
   metrics_out[2,5] <- length(unique(data.fall$SiteName))
   metrics_out[2,6] <- length(y)
-
+```
+```{r}
   
-  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=T)
+  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=NA)
   
-  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=T)
+  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=NA)
   
 ```
 plot the full year of predicted v observed
 ```{r}
-  pred.y <- read.csv(paste0("jk_pred_v_y_", var, "_", basin, "_", yearPath, "_sp_fall.csv"), stringsAsFactors = FALSE, header = FALSE)
+  pred.y <- read.csv(paste0("jk_pred_v_y_", var, "_", basin, "_", yearPath, "_full_year.csv"), stringsAsFactors = FALSE, header = FALSE)
   colnames(pred.y) <- c("Y", "PredY", "JulDay", "Season", "Year")
   
   {plot(pred.y$PredY, pred.y$Y, pch=16, col="blue", main=paste0(var, " 8-day stream temp ", basin, " ", yearPath), xlab="Predicted", ylab="Observed")
@@ -677,7 +688,8 @@ This part applies the model coefficients to the LST to generate 8-day temp estim
   elev.in <- read.csv(paste0("../../", basin, "_rca_elev.csv"), stringsAsFactors = F)
   colnames(elev.in)[1] <- "RCAID"
   LST.in <- read.dbf(paste0("../../", "LST", yrPath, "_", basin, "_RCA.dbf"))
-  
+  #something up with day 361
+  LST.in[,46] <- LST.in[,45]
   colnames(LST.in)<-gsub("X13", "", colnames(LST.in))
   
   newnamesnum <- as.numeric(colnames(LST.in)[1:46])
@@ -724,6 +736,10 @@ This part applies the model coefficients to the LST to generate 8-day temp estim
   LogPred.out[LogPred.out < -0.5] = -0.5
   
   write.dbf(LogPred.out, file = paste0("predt", yearPath, "_", basin, "_8D_", var, ".dbf"))
+```
+Plot orig data
+```{r}
+  plot(NoNA.xyz$z, NoNA.xyz$y)
 ```
 Plot some reaches to take a peek
 ```{r}  
@@ -864,16 +880,25 @@ Animation output
   fix4 <- classIntervals(means, n = 10, style = "fixed",fixedBreaks=c(-1,2,4,6,8,10,12,14,16,18))
   fix4.colors <- findColours(fix4,pal=seis)
   
+```
+```{r}
+
   for (i in 3:48)
     {
       
-      namey <- gsub(paste0("T", var, yrPath, "_"), "", colnames(network@data)[i])
+      namey <- gsub(paste0("T", var, "_", yrPath, "_"), "", colnames(network@data)[i])
       
       filename <- paste0(modelPath, "/graphics/", namer[i-2], ".png", sep="")
       png(filename=filename, res = 300, width = 1500, height = 1500, units = "px", bg="black")
       
-      fix3 <- classIntervals(network@data[,i], n = 11, style = "fixed",fixedBreaks=c(-1,2,4,6,8,10,12,14,16,18, 20))
+      u <- unique(network@data[,i])
+      
+      if(length(u )< 3){
+        fix3.colors <- rep("#0024E3",282)
+      } else {
+      fix3 <- classIntervals(network@data[,i], n = 11, style = "fixed",fixedBreaks=c(-1,2,4,6,8,10,12,14,16,18,20))
       fix3.colors <- findColours(fix3,pal=seis)
+      }
       
       cexEr <-ifelse(abs(error_pts@data[,i]) == 0, 0,
                      ifelse(abs(error_pts@data[,i])>0 & error_pts@data[,i-1]<1, 0.5,
@@ -889,7 +914,7 @@ Animation output
       legend("bottomright", pch=16, col="gray40", pt.cex=c(0.5, 0.75, 1.0, 1.25), title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", cex=.5, text.col="white");
       
       
-      title(paste0(longBasin, " 8-day ", var, " ", yearPath, " (°C)"), line=-0.6, adj=0.1, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5)
+      title(paste0(longBasin, " 8-day ", longVar, " ", yearPath, " (°C)"), line=-0.6, adj=0.1, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5)
         mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-5, col="white", cex=.5)
         
       tmp2 <- subplot(

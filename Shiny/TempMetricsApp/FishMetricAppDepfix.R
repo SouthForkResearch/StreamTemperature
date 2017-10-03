@@ -177,7 +177,7 @@ server <- function(input, output) {
     }
     
     for(i in 1:dim(filesInfo)[1]){
-      drop_getShp(filesList[i])
+      drop_getShp(filesInfo[i])
     }
     
     network <- readOGR(dsn=dest, layer=netname)
