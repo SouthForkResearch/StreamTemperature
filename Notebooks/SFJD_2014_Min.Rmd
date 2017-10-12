@@ -1,5 +1,5 @@
 ---
-title: "South Fork John Day 2014 Mean"
+title: "South Fork John Day 2014 Min"
 output: html_notebook
 ---
 
@@ -46,10 +46,10 @@ library(uuid)
   dataPath <- paste0(mainPath, longBasin, "/")
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mn"
-  longVar <- "Mean"
-  dataVar <- "Mn8Day" #name of the variable in the logger data
-  capVar <- "MEAN"
+  var <- "Min"
+  longVar <- "Min"
+  dataVar <- "Min8Day" #name of the variable in the logger data
+  capVar <- "MIN"
   
 
  
@@ -336,7 +336,7 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.sp[-c(247,259,269), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.sp[-c(##), ])
 ```
 recheck for outliers
 ```{r}
@@ -353,7 +353,7 @@ more tests: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(247,259,269), ]
+  data.sp <- data.sp[-c(##), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -446,7 +446,7 @@ check for outliers
 ```
 rerun w/o outliers (if necessary)
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d, data=data.fall[-c(##), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d, data=data.fall[-c(62), ])
 ```
 recheck for outliers
 ```{r}
@@ -463,7 +463,7 @@ more diagonstics: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.fall <- data.fall[-c(##), ]
+  data.fall <- data.fall[-c(62), ]
   y <- data.fall$y
   x <- data.fall$x
   z <- data.fall$z
@@ -808,7 +808,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 15 -morph 3 *.png SFJD_2014_8D_Mn.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 15 -morph 3 *.png SFJD_2014_8D_Min.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}

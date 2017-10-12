@@ -1,5 +1,5 @@
 ---
-title: "South Fork John Day 2014 Mean"
+title: "South Fork John Day 2014 Max"
 output: html_notebook
 ---
 
@@ -46,10 +46,10 @@ library(uuid)
   dataPath <- paste0(mainPath, longBasin, "/")
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mn"
-  longVar <- "Mean"
-  dataVar <- "Mn8Day" #name of the variable in the logger data
-  capVar <- "MEAN"
+  var <- "Mx"
+  longVar <- "Max"
+  dataVar <- "Max8Day" #name of the variable in the logger data
+  capVar <- "MAX"
   
 
  
@@ -608,7 +608,7 @@ Plot orig data
 ```{r}
   plot(NoNA.xyz$z, NoNA.xyz$y)
 ```
-Plot some reaches to take a peek
+Plot some random reaches to take a peek
 ```{r}
   {plot(newnamesnum, LogPred.out[300,1:46])
   points(newnamesnum, LogPred.out[1300, 1:46], pch=16, col="blue")
@@ -808,7 +808,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 15 -morph 3 *.png SFJD_2014_8D_Mn.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 15 -morph 3 *.png SFJD_2014_8D_Mx.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
