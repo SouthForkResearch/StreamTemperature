@@ -1,5 +1,5 @@
 ---
-title: "Minam/Wallowa Min 2014"
+title: "Minam/Wallowa Max 2014"
 output: html_notebook
 ---
 
@@ -44,10 +44,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Min"
-  longVar <- "Min"
-  dataVar <- "X8DayMin" #name of the variable in the logger data
-  capVar <- "MIN"
+  var <- "Mx"
+  longVar <- "Max"
+  dataVar <- "X8DayMax" #name of the variable in the logger data
+  capVar <- "MAX"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -501,7 +501,7 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.sp[-c(##), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.sp[-c(182,187), ])
 ```
 recheck for outliers
 ```{r}
@@ -518,7 +518,7 @@ more tests: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(##), ]
+  data.sp <- data.sp[-c(182,187), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -611,7 +611,7 @@ check for outliers
 ```
 rerun w/o outliers (if necessary)
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d, data=data.fall[-c(54), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d, data=data.fall[-c(48), ])
 ```
 recheck for outliers
 ```{r}
@@ -628,7 +628,7 @@ more diagonstics: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.fall <- data.fall[-c(54), ]
+  data.fall <- data.fall[-c(48), ]
   y <- data.fall$y
   x <- data.fall$x
   z <- data.fall$z
@@ -970,7 +970,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Minam_2014_8D_Min.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Minam_2014_8D_Mx.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
