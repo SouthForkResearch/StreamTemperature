@@ -36,10 +36,10 @@ library(httr)
 # token <- drop_auth()
 # saveRDS(token, "droptoken.rds")
 #####################################################
-#options("httr_oauth_cache" = TRUE)
+options("httr_oauth_cache" = TRUE)
 token <- readRDS("droptoken.rds")
 drop_acc(dtoken = token)
-mainPath <- "https://www.dropbox.com/sh/juesdmyc9df8i60/"
+#mainPath <- "https://www.dropbox.com/sh/juesdmyc9df8i60/"
 seis = c("#AA0000", "#D00000", "#F70000", "#FF1D00", "#FF4400", "#FF6A00", "#FF9000", "#FFB700", "#FFDD00", "#FFE200", "#BDFF0C", "#73FF1A", "#3FFA36", "#16F45A", "#00D08B", "#0087CD", "#0048FA", "#0024E3")
 seis <- rev(seis)
 purp6 = c("#bfd3e6", "#9ebcda", "#8c96c6", "#8c6bb1", "#88419d", "#6e016b")
@@ -158,7 +158,7 @@ server <- function(input, output) {
     yrPath <- substr(yearPath, start=3, stop=4)
     
     netname <- paste(basinName, "_", yearPath, "_8D_", tVar, sep = "")
-    modelPath <- paste0("StreamTemperatureModels/", longBasin, "/", yearPath, "/", var, sep = "")
+    modelPath <- paste0("streamtemperaturemodels/", longBasin, "/", yearPath, "/", var, sep = "")
     
     filesInfo <- drop_dir(paste0(modelPath, sep = ""))
     filesInfo <- data.table(filesInfo)
@@ -173,11 +173,7 @@ server <- function(input, output) {
     }
     
     for(i in 1:dim(filesInfo)[1]){
-      drop_getShp(filesInfo[,"path_display"][i])
-    }
-    
-    for(i in 1:dim(filesInfo)[1]){
-      drop_getShp(filesInfo[i])
+      drop_getShp(paste0(filesInfo[,"path_display"][i]))
     }
     
     network <- readOGR(dsn=dest, layer=netname)
