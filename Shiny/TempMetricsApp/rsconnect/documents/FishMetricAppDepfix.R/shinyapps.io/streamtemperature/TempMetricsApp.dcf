@@ -1,0 +1,10 @@
+name: TempMetricsApp
+title: TempMetricsApp
+account: streamtemperature
+server: shinyapps.io
+appId: 225917
+bundleId: 1029638
+url: https://streamtemperature.shinyapps.io/TempMetricsApp/
+when: 1508191071.25548
+asMultiple: FALSE
+asStatic: FALSE

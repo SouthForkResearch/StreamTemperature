@@ -33,10 +33,10 @@ library(searchable)
 library(httr)
 
 #########This part must be done once to authorize the dropbox acct and save the token:
-# token <- drop_auth()
-# saveRDS(token, "droptoken.rds")
+#token <- drop_auth(new_user=TRUE)
+#saveRDS(token, "droptoken.rds")
 #####################################################
-options("httr_oauth_cache" = TRUE)
+
 token <- readRDS("droptoken.rds")
 drop_acc(dtoken = token)
 #mainPath <- "https://www.dropbox.com/sh/juesdmyc9df8i60/"
@@ -169,7 +169,7 @@ server <- function(input, output) {
     dest=tempdir()
     drop_getShp <- function(my.file, dest=tempdir()){
       localfile = paste0(dest, "/", basename(as.character(my.file)))
-      drop_download(my.file, local_path = localfile, overwrite = TRUE)
+      drop_download(my.file, local_path = localfile, overwrite = TRUE, dtoken=token)
     }
     
     for(i in 1:dim(filesInfo)[1]){

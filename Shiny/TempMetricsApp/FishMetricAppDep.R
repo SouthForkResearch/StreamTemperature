@@ -30,16 +30,16 @@ library(magrittr)
 library(data.table)
 library(rdrop2)
 library(searchable)
-library(httr)
+
 
 #########This part must be done once to authorize the dropbox acct and save the token:
-# token <- drop_auth()
-# saveRDS(token, "droptoken.rds")
+#token <- drop_auth(new_user=TRUE)
+#saveRDS(token, "droptoken.rds")
 #####################################################
-#options("httr_oauth_cache" = TRUE)
+
 token <- readRDS("droptoken.rds")
 drop_acc(dtoken = token)
-mainPath <- "https://www.dropbox.com/sh/juesdmyc9df8i60/"
+#mainPath <- "https://www.dropbox.com/sh/juesdmyc9df8i60/"
 seis = c("#AA0000", "#D00000", "#F70000", "#FF1D00", "#FF4400", "#FF6A00", "#FF9000", "#FFB700", "#FFDD00", "#FFE200", "#BDFF0C", "#73FF1A", "#3FFA36", "#16F45A", "#00D08B", "#0087CD", "#0048FA", "#0024E3")
 seis <- rev(seis)
 purp6 = c("#bfd3e6", "#9ebcda", "#8c96c6", "#8c6bb1", "#88419d", "#6e016b")
@@ -47,6 +47,10 @@ YlGnBu = c("#ffffcc", "#c7e9b4", "#7fcdbb", "#41b6c4", "#2c7fb8", "#253494")
 namesnum <- c(1,9,17,25,33,41,49,57,65,73,81,89,97,105,113,121,129,137,145,153,161,169,177,185,193,201,209,217,225,233,241,249,257,265,273,281,289,297,305,313,321,329,337,345,353,361)
 namey <- sprintf('%03d', namesnum)
 tVar <- "Mn"
+
+# options(shiny.error = function() {
+#   stop("Please select basin/year/metric")
+# })
 
 # Define UI for application that draws a map and calcs some stats
 ui <- fluidPage(
@@ -59,12 +63,12 @@ ui <- fluidPage(
       selectizeInput(inputId = "year",
                   label = "Choose Year",
                   choices = c("", "2011","2012", "2013", "2014", "2015"),
-                  selected = NULL,
+                  selected = "2015",
                   options = list(placeholder = 'Year')),
       selectizeInput(inputId = "basin",
                   label = "Choose Basin",
                   choices = c("", "Asotin", "Entiat", "JohnDay", "Lemhi", "Methow", "Minam-Wallowa", "MFSalmon-PantherCreek", "Pahsimeroi", "Potlatch", "Secesh", "SForkSalmon", "Tucannon", "UpperGrandeRonde", "Wenatchee", "YankeeFork"),
-                  selected = NULL,
+                  selected = "Entiat",
                   options = list(placeholder = 'Basin')),
       selectInput(inputId = "metric",
                   label = "Choose temperature metric",
@@ -102,6 +106,7 @@ ui <- fluidPage(
 server <- function(input, output) {
   
   
+ 
   
   
   output$meanGraph <- renderPlot({
@@ -158,24 +163,23 @@ server <- function(input, output) {
     yrPath <- substr(yearPath, start=3, stop=4)
     
     netname <- paste(basinName, "_", yearPath, "_8D_", tVar, sep = "")
-    modelPath <- paste0("StreamTemperatureModels/", longBasin, "/", yearPath, "/", var, sep = "")
+    modelPath <- paste0("streamtemperaturemodels/", longBasin, "/", yearPath, "/", var, sep = "")
     
     filesInfo <- drop_dir(paste0(modelPath, sep = ""))
     filesInfo <- data.table(filesInfo)
     validate(
-      need(try(!is.null(filesInfo$path) ), "No model data for that basin/year/metric exists, please choose another.")
+      need(try(!is.null(filesInfo$path_display) ), "No model data for that basin/year/metric exists, please choose another.")
     )
     filesInfo <- filesInfo[path_display %like% netname]
     dest=tempdir()
     drop_getShp <- function(my.file, dest=tempdir()){
-      localfile = paste0(dest, "/", basename(my.file))
-      drop_get(my.file, local_file = localfile, overwrite = TRUE)
+      localfile = paste0(dest, "/", basename(as.character(my.file)))
+      drop_download(my.file, local_path = localfile, overwrite = TRUE, dtoken=token)
     }
     
     for(i in 1:dim(filesInfo)[1]){
-      drop_getShp(filesInfo$path_display[i])
+      drop_getShp(paste0(filesInfo[,"path_display"][i]))
     }
-    
     
     network <- readOGR(dsn=dest, layer=netname)
     

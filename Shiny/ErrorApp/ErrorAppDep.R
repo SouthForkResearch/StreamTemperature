@@ -182,7 +182,7 @@ server <- function(input, output) {
     #function for reading shapefiles from Dropbox
     drop_getShp <- function(my.file, dest=tempdir()){
       localfile = paste0(dest, "/", basename(my.file))
-      drop_get(my.file, local_file = localfile, overwrite = TRUE)
+      drop_download(my.file, local_path = localfile, overwrite = TRUE)
     }
     
     netname <- paste(basinName, "_", yearPath, "_8D_", var, sep = "")
@@ -192,13 +192,13 @@ server <- function(input, output) {
     
     #error check for whether model data exists
     validate(
-      need(try(!is.null(filesInfoNet$path) ), "No model data for that basin/year/metric exists, please choose another.")
+      need(try(!is.null(filesInfoNet$path_display) ), "No model data for that basin/year/metric exists, please choose another.")
     )
     
-    filesInfoNet <- filesInfoNet[path %like% netname]
+    filesInfoNet <- filesInfoNet[path_display %like% netname]
     dest=tempdir()
     for(i in 1:dim(filesInfoNet)[1]){
-      drop_getShp(filesInfoNet$path[i])
+      drop_getShp(paste0(filesInfoNet[,"path_display"][i]))
     }
     
     network <- readOGR(dsn=dest, layer=netname)
@@ -214,11 +214,11 @@ server <- function(input, output) {
     modelPathRCA <- paste0("StreamTemperatureModels/", longBasin, sep = "")
     filesInfoRCA <- drop_dir(paste0(modelPathRCA, sep = ""))
     filesInfoRCA <- data.table(filesInfoRCA)
-    filesInfoRCA <- filesInfoRCA[path %like% rcaName]
+    filesInfoRCA <- filesInfoRCA[path_display %like% rcaName]
     
     dest=tempdir()
     for(i in 1:dim(filesInfoRCA)[1]){
-      drop_getShp(filesInfoRCA$path[i])
+      drop_getShp(filesInfoRCA$path_display[i])
     }
     
     rca <- readOGR(dsn=dest, layer = rcaName)
