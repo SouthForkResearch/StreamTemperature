@@ -1,5 +1,5 @@
 ---
-title: "Lolo Max 2013"
+title: "Lolo Min 2013"
 output: html_notebook
 ---
 
@@ -44,10 +44,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mx"
-  longVar <- "Max"
-  dataVar <- "Mx8D" #name of the variable in the logger data
-  capVar <- "MAX"
+  var <- "Min"
+  longVar <- "Min"
+  dataVar <- "Min8D" #name of the variable in the logger data
+  capVar <- "MIN"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -346,7 +346,7 @@ plot(mod)
   colnames(pred.out) <- c("Y", "PredY", "JulDay", "Season", "Year")
   write.table (x=pred.out,append=T,row.names=F,file=paste0("jk_pred_v_y_", var, "_", basin, "_", yearPath, "_full_year.csv"),sep = ",", col.names=F)  
   
-  plot(pred.out[,2], pred.out[,1])
+  plot(pred.out[,1], pred.out[,2])
   abline(0,1)
 ```
 ```{r}  
@@ -442,7 +442,7 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d, data=data.sp[-c(287,274,299,235), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d, data=data.sp[-c(287), ])
 ```
 recheck for outliers
 ```{r}
@@ -459,7 +459,7 @@ more tests: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(287,274,299,235), ]
+  data.sp <- data.sp[-c(287), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -920,7 +920,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Lolo_2013_8D_Mx.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Lolo_2013_8D_Min.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
