@@ -6,9 +6,8 @@ output: html_notebook
 This set of R scripts processes logger data for predictive stream temperature modeling
 Created: 21 Feb 2017
 Used for all watersheds and all years by changing the basin names and year paths 
-Added the temp data from the USGS station to the logger dataset.  It's near site CBW05583-050623, so used that ID to place it since that site was not sampled
 
-USGS station: # 13331500
+USGS station: # 13339500
 Stage setting:
 ```{r, message=FALSE}
 library(timeSeries)
