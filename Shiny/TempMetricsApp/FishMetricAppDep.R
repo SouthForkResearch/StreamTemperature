@@ -59,7 +59,7 @@ ui <- fluidPage(
   
   sidebarLayout(
     sidebarPanel(
-      h5("This tool displays the total number of days the stream temperature is above the chosen threshold."),
+      h5("This tool displays the total number of days the stream temperature is above the chosen threshold for Mean or Max temp, or below for Min."),
       selectizeInput(inputId = "year",
                   label = "Choose Year",
                   choices = c("", "2011","2012", "2013", "2014", "2015"),
@@ -93,10 +93,10 @@ ui <- fluidPage(
     ),
     
     mainPanel(
-      h4("Days in exceedence of threshold over selected time period"),
+      h4("Total days meeting criteria over selected time period"),
       h5("(May take a few moments to load...)"),
       plotOutput(outputId = "meanGraph", width = 650, height = 750),
-      h4("Percent of total stream length in exceedence"),
+      h4("Percent of total stream length meeting criteria"),
       tableOutput(outputId = "tableMean")
     )
   )
@@ -111,7 +111,7 @@ server <- function(input, output) {
   
   output$meanGraph <- renderPlot({
 
-
+    # This part reads in all the input & sets naming conventions
     
     longBasin <- input$basin
     yearPath <- input$year
@@ -163,6 +163,9 @@ server <- function(input, output) {
     yrPath <- substr(yearPath, start=3, stop=4)
     
     netname <- paste(basinName, "_", yearPath, "_8D_", tVar, sep = "")
+    
+    # This part gets the directory structure and reads in the spatial data
+    
     modelPath <- paste0("streamtemperaturemodels/", longBasin, "/", yearPath, "/", var, sep = "")
     
     filesInfo <- drop_dir(paste0(modelPath, sep = ""))
@@ -198,17 +201,29 @@ server <- function(input, output) {
     net@data$Mn <- NULL
     net@data$Mn <- rowMeans(net@data[,start:end])
     
+    # calcs basin means for color ramp
     means <- colMeans(net@data[2:47], na.rm = TRUE)
+    
+    # counts days in time range
     days <- net@data[, start:end]
-    count <- (rowSums(days > maxTemp))*8
+    
+    # counts days above or below threshold (depending on if the metric is the min temp)
+    if (tVar == "Min"){
+      count <- (rowSums(days < maxTemp))*8
+    } else{
+      count <- (rowSums(days > maxTemp))*8
+    }
     
     validate(
-      need(sum(count, na.rm=TRUE) > 0, "No days above the threshold.")
+      need(sum(count, na.rm=TRUE) > 0, "No days meet the criteria.")
     )
     
+    # add the count to the network data table
     net@data$count <- count
     summary_all <- quantile(count, na.rm = TRUE)
     nclr <- length(unique(count))
+    
+    # sets display parameters for specific basins, followed by a general set
     
     fix3 <- classIntervals(means, n = 10, style = "fixed",fixedBreaks=c(2,4,6,8,10,12,14,16,18,20))
     fix3.colors <- findColours(fix3,pal=seis)
@@ -251,7 +266,7 @@ server <- function(input, output) {
         legend(x=grconvertX(c(0.0,0.20), from='npc'), 
                y=grconvertY(c(0.28, 0.58), from='npc'), 
                fill = attr(fix4.colors, "palette"), 
-               title="Day above threshold", 
+               title="Number of days", 
                legend = names(attr(fix4.colors, "table")), 
                bty = "n", 
                cex=1.0, 
@@ -280,7 +295,7 @@ server <- function(input, output) {
         plot(net, col=fix4.colors, bg="white", fg="black",lwd=2)
         legend("topleft", 
                fill = attr(fix4.colors, "palette"), 
-               title="Day above threshold", 
+               title="Number of days", 
                legend = names(attr(fix4.colors, "table")), 
                bty = "n", 
                cex=1.0, 
@@ -309,7 +324,7 @@ server <- function(input, output) {
         plot(net, col=fix4.colors, bg="white", fg="black",lwd=2)
         legend("topright", 
                fill = attr(fix4.colors, "palette"), 
-               title="Day above threshold", 
+               title="Number of days", 
                legend = names(attr(fix4.colors, "table")), 
                bty = "n", 
                cex=1.0, 
@@ -348,7 +363,7 @@ server <- function(input, output) {
       totes$sum <- round((totes$sum/popSum)*100, 1)
       totes <- totes[order(totes$count),]
       #totes$cumtot <- cumsum(totes$sum)
-      colnames(totes) <- c("Days above", "% stream length")
+      colnames(totes) <- c("# days", "% stream length")
       head(totes, n = dim(totes)[1], digits=0)
      })
   })
