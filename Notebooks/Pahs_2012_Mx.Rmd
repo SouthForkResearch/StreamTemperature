@@ -1,5 +1,5 @@
 ---
-title: "Pahsimeroi Mean 2012"
+title: "Pahsimeroi Max 2012"
 output: html_notebook
 ---
 
@@ -45,10 +45,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mn"
-  longVar <- "Mean"
-  dataVar <- "Mn8D" #name of the variable in the logger data
-  capVar <- "MEAN"
+  var <- "Mx"
+  longVar <- "Max"
+  dataVar <- "Mx8D" #name of the variable in the logger data
+  capVar <- "MAX"
 
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -597,7 +597,7 @@ recheck assumptions
 ```
 more diagonstics: qqplot
 ```{r}
-  qqPlot(mod, main="QQ Plot Fall Leg")
+  qqPlot(mod2, main="QQ Plot Fall Leg")
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
@@ -631,7 +631,7 @@ LOO PRESS stats
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + z + d, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + z + d + d*z, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
 ```
@@ -759,14 +759,13 @@ This parts formats the error by day/site info
   
   Log.in <- read.csv(paste0("../../", basin, "_CBS_NorWeST_", yearPath,  "_logger_data.csv"), stringsAsFactors = FALSE)
   
-  varName <- paste0("T", var, yrPath)
-  
+
   ID.in <- read.csv(paste0("../../", basin, "_sites_rca_elev.csv"), stringsAsFactors = FALSE) 
   
   Pred.in <- read.dbf(paste0("predt", yearPath, "_", basin, "_8D_", var, ".dbf"))
   colnames(Pred.in)<-gsub(varName, "", colnames(Pred.in))
   colnames(Pred.in)<-gsub("_", "", colnames(Pred.in))
-  namesnum <- as.numeric(colnames(Pred.in)[1:46]);
+  newnamesnum <- as.numeric(colnames(Pred.in)[1:46]);
   
   Pred.Log.out <- data.frame (mup = NULL)
   SiteID <- unique(Log.in$SiteID)
@@ -915,15 +914,19 @@ Animation output
       title(paste0(longBasin, " 8-day ", longVar, " ", yearPath, " (°C)"), line=-0.6, adj=0, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5)
       mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-5, col="white", cex=.5)
       tmp2 <- subplot(
-        plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
+        plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean (+-SD)", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
         x=grconvertX(c(0.1,0.45), from='npc'), 
         y=grconvertY(c(0.1, 0.25), from='npc'),
         size=c(1,1.5), vadj=0.5, hadj=0.5, 
         pars=list( mar=c(0,0,0,0)+0.1, cex=0.5))
+      
       op <- par(no.readonly=TRUE)
       par(tmp2)
       arrows(namesnum[1:(i-2)], yplus[1:(i-2)], namesnum[1:(i-2)], yminus[1:(i-2)], length=0, lwd=5, code=3, lend=0, col="gray20")
       par(op)
+      
+      title(paste0(longBasin, " 8-day ", longVar, " ", yearPath, " (°C)"), line=-0.6, adj=0, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5)
+      mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-5, col="white", cex=.5)
       tmp2 <- subplot(
         plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
         x=grconvertX(c(0.1,0.45), from='npc'), 
@@ -939,7 +942,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Pahs_2012_8D_Mn.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Pahs_2012_8D_Mx.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
