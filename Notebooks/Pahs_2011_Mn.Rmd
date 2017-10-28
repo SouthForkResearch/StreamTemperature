@@ -8,6 +8,8 @@ Created: 21 Feb 2017
 Used for all watersheds and all years by changing the basin names and year paths 
 Edited 15 March 2017 to format as Notebook
 
+USGS station: 13302005
+
 Stage setting:
 ```{r, message=FALSE}
 library(timeSeries)
@@ -28,7 +30,9 @@ library(rgdal)
 library(raster)
 library(RColorBrewer)
 library(classInt)
-
+library(uuid)
+```
+```{r}
  basin <- "Pahs"
   midBasin <- "Pahsimeroi"
   longBasin <- "Pahsimeroi"
@@ -43,18 +47,173 @@ library(classInt)
   
   var <- "Mn"
   longVar <- "Mean"
-  dataVar <- "Mn8Day" #name of the variable in the logger data
+  dataVar <- "Mn8D" #name of the variable in the logger data
   capVar <- "MEAN"
 
-  modelPath <- paste0(mainPath, "USal/", longBasin, "/", yearPath, "/", longVar, "/")
+  modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
   
 ```
+# This part reads the LST data and gap-fills using a cubic spline function
+```{r, message=FALSE}
 
+  
+  
+  LST.in <- read.dbf(paste0(gisPath, "/", longBasin, "/", basin, "_", yrPath, "_LST.dbf"))
+  PointID <- LST.in[,1]
+  LST.in <- LST.in[,2:47]
+  LST.in[LST.in<0.1] = NA
+  
+  LST.names<-colnames(LST.in)
+  
+  # if first column is empty for the entire grid (so a mean isn't possible)
+  # LST.in[,1] <- LST.in[,2]
+  
+  LSTmeans <- colMeans(LST.in, na.rm=TRUE)
+  myFunc <- function(x)
+    {
+      if (is.na(x[1]))
+      {
+        x[1] <- LSTmeans[1]
+      }
+      x
+    }
+  
+  LST.filled <- apply(LST.in, 1, function(x) myFunc(x))
+  LST.filled <- as.data.frame(t(LST.filled))
+  
+  
+  myFunc2 <- function(x)
+    {
+      if (is.na(x[46]))
+      {
+        x[46] <- x[43]
+      }
+      x
+    }
+  
+  
+  LST.filled <- apply(LST.filled, 1, function(x) myFunc2(x))
+  LST.filled <- as.data.frame(t(LST.filled))
+  
+  myFunc3 <- function(x)
+    {
+      if (is.na(x[46]))
+      {
+        x[46] <- LSTmeans[46]
+      }
+      x
+    }
+  
+  LST.filled <- apply(LST.filled, 1, function(x) myFunc3(x))
+  LST.filled <- as.data.frame(t(LST.filled))
+  
+  tLST.in <- t(LST.filled)
+  
+  tLST.out <- na.spline(tLST.in)
+  CLST <- tLST.out*0.02-273.15
+  tCLST <- t(CLST)
+  CLST.out <- as.data.frame(tCLST)
+  
+    
+  CLST.out$PointID <- PointID
+  colnames(CLST.out)[1:46] <- LST.names
+```
+Plot to look
+```{r}
+{plot(1:46, CLST.out[562,1:46])
+  points(1:46, CLST.out[114, 1:46], pch=16, col="blue")
+  points(1:46, CLST.out[100, 1:46], pch=16, col="green")
+  points(1:46, CLST.out[1, 1:46], pch=16, col="red")
+  points(1:46, CLST.out[80, 1:46], pch=16, col="lightblue")}
+```
+Write it out
+```{r}
+  write.dbf(CLST.out, file = paste0(mainPath, longBasin, "/", "LST", yrPath, "_", basin, "_interp.dbf"))
+  
+  
+```
+This part calculates the zonal mean of the daily LST for each RCA
+```{r}
+out_Preds <- read.dbf(paste0(mainPath, longBasin, "/", "LST", yrPath, "_", basin, "_interp.dbf"))
+  
+  
+  weights <- read.csv(paste0(mainPath, longBasin, "/", basin, "_area_wgts.csv"), stringsAsFactors=FALSE)
+  weights[weights$area_wgt<0.01, "area_wgt"] = 0.01
+  
+  rcas <- unique(unlist(weights$RCAID))
+  rca_zonal <- matrix(ncol=46, nrow=length(rcas))
+  
+  
+  l <- 1
+  
+  for(i in rcas)	
+    {
+      pixels <- weights[weights$RCAID == i, "GRIDCODE"]
+      wgts <- weights[weights$RCAID == i, "area_wgt"]
+      
+      for (j in 1:46)
+      {
+        daily <- out_Preds[out_Preds$PointID %in% pixels, j]
+        zonal_mn <- weighted.mean(daily, wgts, na.rm = TRUE)
+        rca_zonal[l,j] <- zonal_mn
+      }
+      l <- l+1
+    }
+  
+  
+  colnames(rca_zonal)[1:46] <- colnames(out_Preds)[1:46]
+  rca_zonal <- as.data.frame(rca_zonal)
+  rca_zonal$RCAID <- rcas
+```
+Plot to look
+```{r}
+{plot(1:46, rca_zonal[rca_zonal$RCAID==667,1:46])
+  points(1:46, rca_zonal[rca_zonal$RCAID==3, 1:46], pch=16, col="blue")
+  points(1:46, rca_zonal[rca_zonal$RCAID==896, 1:46], pch=16, col="green")
+  points(1:46, rca_zonal[rca_zonal$RCAID==345, 1:46], pch=16, col="red")
+  points(1:46, rca_zonal[rca_zonal$RCAID == 200, 1:46], pch=16, col="lightblue")}
+```
+Write out rca_zonal
+```{r}
+  write.dbf(rca_zonal, file = paste0("../../", "LST", yrPath, "_", basin, "_RCA.dbf"))
+  
+```
+# Discharge data formatting
+```{r}
+
+  Dv.in <- read.csv(paste0("../", basin, "_", yearPath, "_dv.csv"), stringsAsFactors = FALSE)
+  
+  dates <- matrix(nrow=365, ncol=1)
+  dates[,1] <- 1:365
+  colnames(dates) <- c("Days")
+  
+  SiteID <- unique(Dv.in$site_no)
+  SiteID <- as.matrix(SiteID)
+  Dv.8Day.out <- data.frame (mup = NULL)
+  
+  for (i in SiteID) 
+    { 
+      Dv.site <- Dv.in[Dv.in$site_no == i,]
+      full.year <- merge(dates, Dv.site, by.x = "Days", by.y = "JulDay", all.x = TRUE)
+      eightday <- rollapply(full.year$Dv, width = 8, FUN = mean, na.rm = T, fill = NA, align = c("left"))
+      eightday <- as.matrix(eightday)
+      full.year$Dv8D<- eightday
+      full.year$Dv8D[361] <- mean(full.year$Dv[361:365 ])
+      Dv.8Day.out <- rbind(Dv.8Day.out, full.year)
+      
+    }
+  
+  ind <- apply(Dv.8Day.out, 1, function(x) !any(is.na(x)))
+  Dv.8Day.out <- Dv.8Day.out[ind,]
+
+write.csv(Dv.8Day.out, paste0("../", basin, "_", yearPath, "_Dv_8Day", ".csv"), row.names = FALSE)
+
+```
 Logger data formatting
 ```{r}
   
-  Log.in <- read.csv(paste0("../", basin, "_CBS_NorWeST_", yearPath, "_logger_data.csv"), stringsAsFactors = FALSE)
+  Log.in <- read.csv(paste0("../../", basin, "_CBS_NorWeST_", yearPath, "_logger_data.csv"), stringsAsFactors = FALSE)
   colnames(Log.in)[1] <- "SiteID"
   
   dates <- matrix(nrow=365, ncol=1)
@@ -73,6 +232,17 @@ Logger data formatting
       eightday <- as.matrix(eightday)
       full.year$Mx8D<- eightday
       full.year$Mx8D[361] <- mean(full.year$DailyMaximum[361:365])
+      
+      eightday <- rollapply(full.year$DailyMinimum, width = 8, FUN = mean, na.rm = T, fill = NA, align = c("left"))
+      eightday <- as.matrix(eightday)
+      full.year$Min8D<- eightday
+      full.year$Min8D[361] <- mean(full.year$DailyMinimum[361:365])
+      
+      eightday <- rollapply(full.year$DailyMean, width = 8, FUN = mean, na.rm = T, fill = NA, align = c("left"))
+      eightday <- as.matrix(eightday)
+      full.year$Mn8D<- eightday
+      full.year$Mn8D[361] <- mean(full.year$DailyMean[361:365])
+      
       Log.8Day.out <- rbind(Log.8Day.out, full.year)
       
     }
@@ -80,18 +250,24 @@ Logger data formatting
   ind <- apply(Log.8Day.out, 1, function(x) !any(is.na(x)))
   Log.8Day.out <- Log.8Day.out[ind,]
   
-  write.csv(Log.8Day.out, paste0(basin, "_", yearPath, "_CBS_NorWeST_8Day_", var, ".csv"), row.names = FALSE)
+  write.csv(Log.8Day.out, paste0("../../", basin, "_CBS_NorWeST_", yearPath,  "_logger_data.csv"), row.names = FALSE)
   
 ```
 Model building
 ```{r}
-  Log.in <- read.csv(paste0(basin, "_", yearPath, "_CBS_NorWeST_8Day_", var, ".csv"), stringsAsFactors = FALSE)
+  Log.in <- read.csv(paste0("../../", basin, "_CBS_NorWeST_", yearPath,  "_logger_data.csv"), stringsAsFactors = FALSE)
   
 
   ID.in <- read.csv(paste0("../../", basin, "_sites_rca_elev.csv"), stringsAsFactors = FALSE) 
-  colnames(ID.in)[1] <- "SiteID"
   
-  LST.in <- read.dbf(paste0(mainPath, longBasin, "/", "LST", yrPath, "_", basin, "_RCA.dbf"))
+  sites <- unique(ID.in$SiteID)
+  
+  Log.in <- Log.in[Log.in$SiteID %in% sites,]
+  
+  Dv.in <- read.csv(paste0("../", basin, "_", yearPath, "_Dv_8Day", ".csv"), stringsAsFactors = FALSE)
+  Dv.in <- Dv.in[,c("Dv8D", "Days")]
+  
+  LST.in <- read.dbf(paste0("../../", "LST", yrPath, "_", basin, "_RCA.dbf"))
   colnames(LST.in)<-gsub("X", "", colnames(LST.in))
   newnamesnum <- as.numeric(colnames(LST.in)[1:46]);
   
@@ -109,24 +285,23 @@ Model building
       
       LST.site <- matrix(ncol=3, nrow=46)
       LST.site[,1] <- as.numeric(unlist(colnames(LST.in)[1:46]))
-      LST.site[,2] <- unlist(LST.in[RCAID,1:46])
+      LST.site[,2] <- unlist(LST.in[LST.in$RCAID == RCAID, 1:46])
       LST.site <- data.frame(LST.site)
       colnames(LST.site) <- c("JulDay", "LST", "Elev")
       LST.site[3] <- Elev
       LST.Log.site <- merge(LST.site, Log.site, by.x = "JulDay",by.y = "Days", all.x=TRUE, all.y = FALSE)
+      LST.Log.site <- merge(LST.Log.site, Dv.in, by.x = "JulDay", by.y = "Days", all.x=TRUE, all.y+FALSE)
       
       LST.Log.out <- rbind(LST.Log.out, LST.Log.site)
     }
   
 
+   Dv <- unlist(LST.Log.site$Dv8D)
   ind <- apply(LST.Log.out, 1, function(x) !any(is.na(x)))
   NoNA.xyz <- LST.Log.out[ind,]
   
-  NoNA.xyz <- NoNA.xyz[,c(dataVar, "LST", "JulDay", "Elev", "SiteName")]
-  colnames(NoNA.xyz) <- c("y", "x", "z", "e", "SiteName")
-  
-  write.csv(x=NoNA.xyz, file= paste0(basin, "_", yearPath, "_8Day_", var, "_model_data.csv"), row.names = FALSE)
-  NoNA.xyz <- read.csv(paste0(basin, "_", yearPath, "_8Day_", var, "_model_data.csv"), stringsAsFactors = FALSE)
+  NoNA.xyz <- NoNA.xyz[,c(dataVar, "LST", "JulDay", "Elev", "Dv8D", "SiteID")]
+  colnames(NoNA.xyz) <- c("y", "x", "z", "e", "d", "SiteName")
   
   write.csv(x=NoNA.xyz, file= paste0(basin, "_", yearPath, "_8Day_", var, "_model_data.csv"), row.names = FALSE)
   
@@ -137,22 +312,37 @@ Model building
   data.fall <- NoNA.xyz[maxrow:nrow(NoNA.xyz),]
   rownames(data.fall) <- 1:dim(data.fall)[1]
 ```
-plot the data
+# plot the data
 ```{r}
   {plot(NoNA.xyz$x, NoNA.xyz$y, main = "full year")
   points(data.sp$x, data.sp$y, pch=16, col="cadetblue3")
   points(data.fall$x, data.fall$y, pch=16, col="chocolate")}
   
 ```
-
+#Correlation matrix
+```{r}
+cor.full <- NoNA.xyz[1:5]
+cor(cor.full)
+```
+#Spring
+```{r}
+cor.sp <- data.sp[1:5]
+cor(cor.sp)
+```
+#Fall
+```{r}
+cor.fall <- data.fall[1:5]
+cor(cor.fall)
+```
 ####Full year models
 ```{r}
   y <- NoNA.xyz$y
   x <- NoNA.xyz$x
   z <- NoNA.xyz$z
   e <- NoNA.xyz$e
+  d <- NoNA.xyz$d
   
-  mod <- lm(y ~ x + I(x^2))
+  mod <- lm(y ~ x + I(x^2) + d)
   sum_mod <- summary(mod)
   sum_mod
 ``` 
@@ -180,14 +370,13 @@ plot model diagnostics
 ```
 ```{r}
   spreadLevelPlot(mod)
-  plot(pred.y, mod$residuals, main="Model diagnostics Full Year", xlab="Predicted", ylab="Residuals")
 ```
 ```{r}
   pressstat_sum <- PRESS(mod, verbose = "FALSE")
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + e, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + d, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
   
@@ -202,41 +391,37 @@ plot model diagnostics
   colnames(pred.out) <- c("Y", "PredY", "JulDay", "Season", "Year")
   write.table (x=pred.out,append=F,row.names=F,file=paste0("jk_pred_v_y_", var, "_", basin, "_", yearPath, "_full_year.csv"),sep = ",", col.names=F)  
   
-  plot(pred.out[,2], pred.out[,1])
-  abline(0,1)
 ```
-```{r}  
-  fit <- lm(y~ pred.y)
-  
-  summary(fit)
-```
+Output data structure
 ```{r}    
-  coeffs_out <- data.frame(Int=numeric(2), bLST=numeric(2), bLST2=numeric(2), bJul=numeric(2), bElev=numeric(2))
+   coeffs_out <- data.frame(Int=numeric(2), bLST=numeric(2), bLST2=numeric(2), bJul=numeric(2), bElev=numeric(2), bD=numeric(2), bDJul=numeric(2))
   metrics_out <- data.frame(r2=numeric(2), RMSE=numeric(2), p2=numeric(2), RMSEP=numeric(2), N_Sites=numeric(2), N=numeric(2))
   rownames(metrics_out) <- c("Spring", "Fall")
   rownames(coeffs_out) <- c("Spring", "Fall")
 ```
-No Julian Day output
+fill coeffs and metrics matrix
 ```{r}
- 
+
   coeffs_out[1,1] <- coeffs[1,1]
   coeffs_out[1,2] <- coeffs[2,1] 
   coeffs_out[1,3] <- coeffs[3,1]
   coeffs_out[1,4] <- 0
-  coeffs_out[1,5] <- 0 #coeffs[4,1]
+  coeffs_out[1,5] <- coeffs[4,1]
+  coeffs_out[1,6] <- 0
   
   metrics_out[1,1] <- sum_mod$adj.r.squared
   metrics_out[1,2] <- sum_mod$sigma
   metrics_out[1,3] <- p2$val[5]
   metrics_out[1,4] <- RMSEP
-  metrics_out[1,5] <- length(unique(data.sp$SiteName))
+  metrics_out[1,5] <- length(unique(NoNA.xyz$SiteName))
   metrics_out[1,6] <- length(y)
   
   coeffs_out[2,1] <- coeffs[1,1]
   coeffs_out[2,2] <- coeffs[2,1]
   coeffs_out[2,3] <- coeffs[3,1]
   coeffs_out[2,4] <- 0
-  coeffs_out[2,5] <- 0 #coeffs[4,1]
+  coeffs_out[2,5] <- 0
+  coeffs_out[2,6] <- coeffs[4,1]
   
   metrics_out[2,1] <- sum_mod$adj.r.squared
   metrics_out[2,2] <- post_mod$sigma
@@ -244,33 +429,29 @@ No Julian Day output
   metrics_out[2,4] <- RMSEP
   metrics_out[2,5] <- length(unique(data.fall$SiteName))
   metrics_out[2,6] <- length(y)
-  
-   
-  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=T)
-  
-  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=T)
-  
 ```
-####Spring/Fall models
+****Spring/Fall models***
 Spring data model
 ```{r}
- 
-  coeffs_out <- data.frame(Int=numeric(2), bLST=numeric(2), bLST2=numeric(2), bJul=numeric(2), bElev=numeric(2))
+  coeffs_out <- data.frame(Int=numeric(2), bLST=numeric(2), bLST2=numeric(2), bJul=numeric(2), bElev=numeric(2), bD=numeric(2), bDJul=numeric(2))
   metrics_out <- data.frame(r2=numeric(2), RMSE=numeric(2), p2=numeric(2), RMSEP=numeric(2), N_Sites=numeric(2), N=numeric(2))
   rownames(metrics_out) <- c("Spring", "Fall")
   rownames(coeffs_out) <- c("Spring", "Fall")
-  
+```
+```{r}
+
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
   e <- data.sp$e
+  d <- data.sp$d
+  
   plot(x, y, main="Spring data")
 ```
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e)
+  mod <- lm(y ~ x + I(x^2) + z + d)
   sum_mod <- summary(mod)
   sum_mod
-
 ```
 ####Model diagnostics
 ```{r}
@@ -289,10 +470,6 @@ check for outliers
 ```{r}
   outlierTest(mod)
 ```
-plot model diagnostics
-```{r}
-  plot(mod)
-```
 rerun w/o outliers
 ```{r}
   mod2 <- lm(y ~ x + I(x^2) + z + e, data=data.sp[-c(##), ])
@@ -306,7 +483,10 @@ recheck assumptions
   gvmodel <- gvlma(mod2)
   summary(gvmodel)
 ```
-
+plot model diagnostics
+```{r}
+  plot(mod)
+```
 more tests: qqplot
 ```{r}
   qqPlot(mod, main="QQ Plot Spring Leg")
@@ -331,7 +511,7 @@ format the data for prediction output
 Look at the residuals
 ```{r}
   spreadLevelPlot(mod)
-  plot(pred.y, mod$residuals, main="Model diagnostics Spring Leg", xlab="Predicted", ylab="Residuals")
+  
 ```
 LOO PRESS stats
 ```{r, message=FALSE}
@@ -339,7 +519,7 @@ LOO PRESS stats
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + z +e, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + z + d, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
 ```
@@ -353,13 +533,15 @@ write out predicted, coeffs, & metrics
   pred.out[,4] <- "Spring"
   pred.out[,5] <- yearPath
   colnames(pred.out) <- c("Y", "PredY", "JulDay", "Season", "Year")
-  write.table (x=pred.out,append=F,row.names=F,file=paste0("jk_pred_v_y_", var, "_", basin, "_", yearPath, "_sp_fall.csv"),sep = ",", col.names=F)  
+  write.table (x=pred.out,append=F,row.names=F,file=paste0("jk_pred_v_y_", var, "_", basin, "_", yearPath, "_full_year.csv"),sep = ",", col.names=F)  
   
   coeffs_out[1,1] <- coeffs[1,1]
   coeffs_out[1,2] <- coeffs[2,1]
   coeffs_out[1,3] <- coeffs[3,1]
   coeffs_out[1,4] <- coeffs[4,1]
-  coeffs_out[1,5] <- coeffs[5,1]
+  coeffs_out[1,5] <- 0
+  coeffs_out[1,6] <- coeffs[5,1]
+  coeffs_out[1,7] <- 0
   
   metrics_out[1,1] <- sum_mod$adj.r.squared
   metrics_out[1,2] <- sum_mod$sigma
@@ -375,10 +557,11 @@ Fall data model
   x <- data.fall$x
   z <- data.fall$z
   e <- data.fall$e
+  d <- data.fall$d
   plot(x, y, main="fall")
 ```
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z +e)
+  mod <- lm(y ~ x + I(x^2) + z + e + d)
   sum_mod <- summary(mod)
   sum_mod
 ```
@@ -405,16 +588,16 @@ plot model diagnostics
 ```
 rerun w/o outliers (if necessary)
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e, data=data.fall[-c(##), ])
+  mod2 <- lm(y ~ x + I(x^2) + z + e, data=data.fall[-c(##), ])
 ```
 recheck assumptions
 ```{r}
-  gvmodel <- gvlma(mod)
+  gvmodel <- gvlma(mod2)
   summary(gvmodel)
 ```
 more diagonstics: qqplot
 ```{r}
-  qqPlot(mod, main="QQ Plot Fall Leg")
+  qqPlot(mod2, main="QQ Plot Fall Leg")
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
@@ -435,7 +618,7 @@ format the data for prediction output
 Look at the residuals
 ```{r}
   spreadLevelPlot(mod)
-  plot(pred.y, mod$residuals, main="Model diagnostics Fall Leg", xlab="Predicted", ylab="Residuals")
+  
 ```
 format data for prediction output
 ```{r}
@@ -448,7 +631,7 @@ LOO PRESS stats
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + z + e, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + z + e + d, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
 ```
@@ -468,6 +651,8 @@ write out predicted, coeffs, & metrics
   coeffs_out[2,3] <- coeffs[3,1]
   coeffs_out[2,4] <- coeffs[4,1]
   coeffs_out[2,5] <- coeffs[5,1]
+  coeffs_out[2,6] <- coeffs[6,1]
+  coeffs_out[2,7] <- 0
   
   metrics_out[2,1] <- sum_mod$adj.r.squared
   metrics_out[2,2] <- post_mod$sigma
@@ -475,17 +660,17 @@ write out predicted, coeffs, & metrics
   metrics_out[2,4] <- RMSEP
   metrics_out[2,5] <- length(unique(data.fall$SiteName))
   metrics_out[2,6] <- length(y)
+```
+```{r}
+  
+  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=NA)
+  
+  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=NA)
 
-  
-  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=T)
-  
-  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=T)
-  
-  write.table(x=metrics_out, append=F,row.names=T, file = paste0(metricPath, yearPath, "_temp_CHaMP/model_metrics/","All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=NA)
 ```
 plot the full year of predicted v observed
 ```{r}
-  pred.y <- read.csv(paste0("jk_pred_v_y_", var, "_", basin, "_", yearPath, "_sp_fall.csv"), stringsAsFactors = FALSE, header = FALSE)
+  pred.y <- read.csv(paste0("jk_pred_v_y_", var, "_", basin, "_", yearPath, "_full_year.csv"), stringsAsFactors = FALSE, header = FALSE)
   colnames(pred.y) <- c("Y", "PredY", "JulDay", "Season", "Year")
   
   {plot(pred.y$PredY, pred.y$Y, pch=16, col="blue", main=paste0(var, " 8-day stream temp ", basin, " ", yearPath), xlab="Predicted", ylab="Observed")
@@ -501,9 +686,10 @@ full year fit metrics
 This part applies the model coefficients to the LST to generate 8-day temp estimates 
 ```{r}
   
-  elev.in <- read.csv(paste0(mainPath, longBasin, "/", basin, "_rca_elev.csv"), stringsAsFactors = F)
+ 
+  elev.in <- read.csv(paste0( "../../", basin, "_rca_elev.csv"))
   
-  LST.in <- read.dbf(paste0(mainPath, longBasin, "/", "LST", yrPath, "_", basin, "_RCA.dbf"))
+  LST.in <- read.dbf(paste0("../../", "LST", yrPath, "_", basin, "_RCA.dbf"))
   
   colnames(LST.in)<-gsub("X", "", colnames(LST.in))
   
@@ -517,29 +703,31 @@ This part applies the model coefficients to the LST to generate 8-day temp estim
   rcas <- unique(LST.elev$RCAID)
   LST.sum <- LST.elev[,c(2:47, 48,1)]
   
- for (i in 1:length(rcas))  
-    {
-      x <- unlist(LST.sum[i,])
-      maxrow <- as.numeric(which.max(x[1:46])) 
-      midrow <- maxrow - 1
-      day <- as.numeric(colnames(LST.sum)[maxrow])
-      
-      j <- 1
-      for (l in 1:midrow)
-      {x[l] <- x[l] * coeffs.in$bLST[1] + j * coeffs.in$bJul[1] +  x[47] * coeffs.in$bElev[1] + x[l]^2 * coeffs.in$bLST2[1] + coeffs.in$Int[1]
-       j <- j + 8}
-      k <- day
-      for (l in maxrow:46)     
-      {x[l] <- x[l] * coeffs.in$bLST[2] + k * coeffs.in$bJul[2] +  x[47] * coeffs.in$bElev[2] + x[l]^2 * coeffs.in$bLST2[2] + coeffs.in$Int[2]
-       k <- k + 8}
-      if (maxrow > 3)
+    for (i in 1:length(rcas))  
+      {
+        x <- unlist(LST.sum[i,])
+        maxrow <- as.numeric(which.max(x[1:46]))
+        midrow <- maxrow - 1
+        day <- as.numeric(colnames(LST.sum)[maxrow])
+        
+        j <- 1
+        for (l in 1:midrow)
+        {x[l] <- x[l] * coeffs.in$bLST[1] + j * coeffs.in$bJul[1] +  x[47] * coeffs.in$bE[1] + Dv[l] * coeffs.in$bD[1] + x[l]^2 * coeffs.in$bLST2[1] + j*Dv[l]*coeffs.in$bDJul[1] + coeffs.in$Int[1]
+        j <- j + 8}
+        k <- day
+        for (l in maxrow:46)     
+        {x[l] <- x[l] * coeffs.in$bLST[2] + k * coeffs.in$bJul[2] +  x[47] * coeffs.in$bE[2] + Dv[l] * coeffs.in$bD[2] + x[l]^2 * coeffs.in$bLST2[2] + j*Dv[l]*coeffs.in$bDJul[2] + coeffs.in$Int[2]
+        k <- k + 8}
+        if (maxrow > 3)
         {
-        x[(midrow)] <- NA
-        fill <- na.spline(x[1:46],)
-        x[(maxrow-3):(maxrow+3)] <- fill[(maxrow-3):(maxrow+3)]
+          x[(midrow)] <- NA
+          fill <- na.spline(x[1:46],)
+          x[(maxrow-3):(maxrow+3)] <- fill[(maxrow-3):(maxrow+3)]
         }
-      LogPred.out[i,1:46] <- x [1:46] 
-    }
+        LogPred.out[i,1:46] <- x [1:46] 
+      }
+  
+    
     
   
   LogPred.out <- as.data.frame(LogPred.out)
@@ -547,11 +735,15 @@ This part applies the model coefficients to the LST to generate 8-day temp estim
   LogPred.out$Basin_RCA <- paste0(basin, "_", LogPred.out$RCAID)
   namesnum <- as.numeric(colnames(LogPred.out[1:46]))
   varName <- paste0("T", var, yrPath)
-  names.out <- sprintf("%s_%03d", varName, namesnum)
+  names.out <- sprintf("%s_%03d", varName, newnamesnum)
   colnames(LogPred.out)[1:46] <- names.out[1:46]
   LogPred.out[LogPred.out < -0.5] = -0.5
   
   write.dbf(LogPred.out, file = paste0("predt", yearPath, "_", basin, "_8D_", var, ".dbf"))
+```
+Plot orig data
+```{r}
+  plot(NoNA.xyz$z, NoNA.xyz$y)
 ```
 Plot some reaches to take a peek
 ```{r}
@@ -565,11 +757,10 @@ Plot some reaches to take a peek
 This parts formats the error by day/site info
 ```{r}
   
-  Log.in <- read.csv(paste0(basin, "_", yearPath, "_CBS_NorWeST_8Day_", var, ".csv"), stringsAsFactors = FALSE)
-
+  Log.in <- read.csv(paste0("../../", basin, "_CBS_NorWeST_", yearPath,  "_logger_data.csv"), stringsAsFactors = FALSE)
+  
 
   ID.in <- read.csv(paste0("../../", basin, "_sites_rca_elev.csv"), stringsAsFactors = FALSE) 
-  colnames(ID.in)[1] <- "SiteID"
   
   Pred.in <- read.dbf(paste0("predt", yearPath, "_", basin, "_8D_", var, ".dbf"))
   colnames(Pred.in)<-gsub(varName, "", colnames(Pred.in))
@@ -589,7 +780,7 @@ This parts formats the error by day/site info
       
       Pred.site <- matrix(ncol=2, nrow=46)
       Pred.site[,1] <- as.numeric(unlist(colnames(Pred.in)[1:46]))
-      Pred.site[,2] <- unlist(Pred.in[RCAID,1:46])
+      Pred.site[,2] <- unlist(Pred.in[Pred.in$RCAID == RCAID, 1:46])
       Pred.site <- data.frame(Pred.site)
       colnames(Pred.site) <- c("JulDay", "Pred")
       
@@ -601,7 +792,7 @@ This parts formats the error by day/site info
   ind <- apply(Pred.Log.out, 1, function(x) !any(is.na(x)))
   NoNA.pred <- Pred.Log.out[ind,]
   
-  NoNA.pred <- NoNA.pred[,c(9, 2, 1, 3)]
+  NoNA.pred <- NoNA.pred[,c(dataVar, "Pred", "JulDay", "SiteID")]
   colnames(NoNA.pred) <- c("Obs", "Pred", "JulDay", "SiteName")
   
  
@@ -649,11 +840,12 @@ Geospatial data output
   ptsname <- paste0(basin, "_sites_RCA")
   
   error_pts <- readOGR(dsn=gisPath, ptsname)
-  error_pts@data <- error_pts@data[,-1]
+  error_pts@data <- error_pts@data[,-3]
   error_pts@data$SiteID <- as.character(error_pts@data$SiteID)
    
   network <- readOGR(dsn=gisPath, layer = netname)
-
+  colnames(network@data)[1] <- "RCAID"
+  
   error_pts <- spTransform(error_pts, proj4string(network))
  
   error_pts <- merge(error_pts, Error.pts.out, by.x="SiteID", by.y="SiteName")
@@ -662,8 +854,8 @@ Geospatial data output
   outnetname <- paste0(basin, "_", yearPath, "_8D_", var)
   outptsname <- paste0(basin, "_Error_", yearPath, "_8D_", var)
   
-  writeOGR(obj=error_pts, dsn=".", layer = paste0(outptsname), driver="ESRI Shapefile")
-  writeOGR(obj=network, dsn=".", layer = paste0(outnetname), driver="ESRI Shapefile")
+  writeOGR(obj=error_pts, dsn=".", layer = paste0(outptsname), driver="ESRI Shapefile", overwrite_layer = TRUE)
+  writeOGR(obj=network, dsn=".", layer = paste0(outnetname), driver="ESRI Shapefile", overwrite_layer = TRUE)
 ```
 Animation output
 ```{r}
@@ -682,18 +874,27 @@ Animation output
   namer <- sprintf('%03d', sequ)
   fix4 <- classIntervals(means, n = 11, style = "fixed",fixedBreaks=c(-1,2,4,6,8,10,12,14,16,18,20))
   fix4.colors <- findColours(fix4,pal=seis)
-  
+```
+```{r}
   for (i in 3:48)
     {
       
-      namey <- gsub(paste0("T", var, "_", yrPath, "_"), "", colnames(network@data)[i])
+      namey <- gsub(paste0("T", var, yrPath, "_"), "", colnames(network@data)[i])
       
       filename <- paste0(modelPath, "/graphics/", namer[i-2], ".png", sep="")
       png(filename=filename, res = 300, width = 1500, height = 1500, units = "px", bg="black")
       
       fix3 <- classIntervals(network@data[,i], n = 11, style = "fixed",fixedBreaks=c(-1,2,4,6,8,10,12,14,16,18, 20))
       fix3.colors <- findColours(fix3,pal=seis)
+       u <- unique(network@data[,i])
       
+      if(length(u )< 3){
+        fix3.colors <- rep("#0024E3",282)
+      } else {
+      fix3 <- classIntervals(network@data[,i], n = 11, style = "fixed",fixedBreaks=c(-1,4,6,8,10,12,14,16,18,20,22))
+      fix3.colors <- findColours(fix3,pal=seis)
+      }
+       
       cexEr <-ifelse(abs(error_pts@data[,i]) == 0, 0,
                      ifelse(abs(error_pts@data[,i])>0 & error_pts@data[,i-1]<1, 0.5,
                             ifelse(abs(error_pts@data[,i])>1 & error_pts@data[,i-1]<2, 0.75,
@@ -704,12 +905,40 @@ Animation output
       plot(network, col=fix3.colors, bg="black", fg="white")
       points(error_pts, pch=16, col="gray40", cex=cexEr)
       
-      legend("topleft", fill = attr(fix3.colors, "palette"), legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, inset=c(.05,0.1), text.col="white");
-      legend("topright", pch=16, col="gray40", pt.cex=c(0.5, 0.75, 1.0, 1.25), title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", cex=.5, inset=c(0.05,0.5), text.col="white");
+      legend("topleft", fill = attr(fix4.colors, "palette"),  title="°C", legend = c("0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-16","16-18","18+"), bty = "n", cex=.5, inset=c(.05,0.1), text.col="white");
+      legend(x=grconvertX(c(0.8,0.95), from='npc'), 
+        y=grconvertY(c(0.1, 0.25), from='npc'),
+        pch=16, col="gray40", pt.cex=c(0.5, 0.75, 1.0, 1.25), title="Model error (°C)", legend = c("0-1","1-2","2-3","3+"), bty = "n", cex=.5, inset=c(0.05,0.5), text.col="white");
       
       
-      title(paste0(longBasin, " 8-day ", var, " ", yearPath, " (°C)"), line=-0.6, adj=0, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5)
+      title(paste0(longBasin, " 8-day ", longVar, " ", yearPath, " (°C)"), line=-0.6, adj=0, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5)
       mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-5, col="white", cex=.5)
+      tmp2 <- subplot(
+        plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean (+-SD)", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
+        x=grconvertX(c(0.1,0.45), from='npc'), 
+        y=grconvertY(c(0.1, 0.25), from='npc'),
+        size=c(1,1.5), vadj=0.5, hadj=0.5, 
+        pars=list( mar=c(0,0,0,0)+0.1, cex=0.5))
+      
+      op <- par(no.readonly=TRUE)
+      par(tmp2)
+      arrows(namesnum[1:(i-2)], yplus[1:(i-2)], namesnum[1:(i-2)], yminus[1:(i-2)], length=0, lwd=5, code=3, lend=0, col="gray20")
+      par(op)
+      
+      title(paste0(longBasin, " 8-day ", longVar, " ", yearPath, " (°C)"), line=-0.6, adj=0, col.main="white", col.sub="white", outer=FALSE, cex.main=0.5)
+      mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-5, col="white", cex=.5)
+      tmp2 <- subplot(
+        plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
+        x=grconvertX(c(0.1,0.45), from='npc'), 
+        y=grconvertY(c(0.1, 0.25), from='npc'),
+        size=c(1,1.5), vadj=0.5, hadj=0.5, 
+        pars=list( mar=c(0,0,0,0)+0.1, cex=0.5))
+      
+      op <- par(no.readonly=TRUE)
+      par(tmp2)
+      arrows(namesnum[1:(i-2)], yplus[1:(i-2)], namesnum[1:(i-2)], yminus[1:(i-2)], length=0, lwd=5, code=3, lend=0, col="gray20")
+      par(op)
+      
       tmp2 <- subplot(
         plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
         x=grconvertX(c(0.1,0.45), from='npc'), 
@@ -726,7 +955,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Pahs_2012_8D_Mean.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Pahs_2011_8D_Mn.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
@@ -764,8 +993,7 @@ This part generates the project.rs.xml file
 
 Realizguid = UUIDgenerate(F)
 
-#now <- Sys.Date()
-now <- "2017-03-07"
+now <- Sys.Date()
 
 ```
 Start writing project.rs.xml file here
