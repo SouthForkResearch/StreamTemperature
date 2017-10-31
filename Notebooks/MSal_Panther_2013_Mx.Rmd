@@ -1,5 +1,5 @@
 ---
-title: "Mid Salmon / Panther Creek Mean 2013"
+title: "Mid Salmon / Panther Creek Max 2013"
 output: html_notebook
 ---
 
@@ -44,10 +44,10 @@ library(uuid)
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   metricPath <- "D:/Dropbox/StreamTemperatureModels/"
   
-  var <- "Mn"
-  longVar <- "Mean"
-  dataVar <- "Mn8D" #name of the variable in the logger data
-  capVar <- "MEAN"
+  var <- "Mx"
+  longVar <- "Max"
+  dataVar <- "Mx8D" #name of the variable in the logger data
+  capVar <- "MAX"
 
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -346,17 +346,53 @@ Model diagnostics
 ```{r}
   outlierTest(mod)
 ```
+rerun w/o outliers
+```{r}
+  mod <- lm(y ~ x + I(x^2) + e + d, data=NoNA.xyz[-c(201), ])
+```
+recheck for outliers
+```{r}
+  outlierTest(mod)
+```
+recheck assumptions
+```{r}
+  gvmodel <- gvlma(mod)
+  summary(gvmodel)
+```
+if outliers need to be removed (otherwise skip)
+```{r}
+  NoNA.xyz <- NoNA.xyz[-c(201), ]
+  y <- NoNA.xyz$y
+  x <- NoNA.xyz$x
+  z <- NoNA.xyz$z
+  e <- NoNA.xyz$e
+  d <- NoNA.xyz$d
+  
+  mod <- lm(y ~ x + I(x^2) + e + d)
+  sum_mod <- summary(mod)
+  sum_mod
+
+```
+# Assumptions:
 ```{r}
   qqPlot(mod, main="QQ Plot Full Year")
 ```
-Assumptions:
 ```{r}
 plot(mod)
 ```
 ```{r}
   spreadLevelPlot(mod)
 ```
+format the data for prediction output 
 ```{r}
+  pressstat_sum <- PRESS(sum_mod, verbose = "FALSE")
+  
+  coeffs <- as.matrix(coefficients(mod))
+  pred.y <- predict(mod)
+  
+  pred.y[pred.y < -0.5] = -0.5
+```
+```{r, message=FALSE}
   pressstat_sum <- PRESS(mod, verbose = "FALSE")
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
@@ -364,8 +400,6 @@ plot(mod)
   mod2 <- plsr(y ~ x + I(x^2) + e + d, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
-  
-  coeffs <- as.matrix(coefficients(sum_mod))
   
   pred.out <- matrix(nrow=length(pred.y), ncol=5)
   pred.out[,1] <- y
@@ -733,7 +767,7 @@ full year fit metrics
   
 ```
 # This parts formats the error by day/site info
-```{r}
+```{r, message=FALSE}
   
   Log.in <- read.csv(paste0("../../", basin, "_CBS_NorWeST_", yearPath,  "_8D_data.csv"), stringsAsFactors = FALSE)
   
@@ -912,10 +946,10 @@ full year fit metrics
   
 ```
 This system call builds an mpeg out of the still graphics
-```{r}
+```{r, message=FALSE}
 setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Panth_2013_8D_Mn.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png Panth_2013_8D_Mx.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
