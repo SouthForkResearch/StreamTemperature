@@ -1,5 +1,5 @@
 ---
-title: "USal network 2012 Max"
+title: "USal network 2011 Min"
 output: html_notebook
 ---
 
@@ -36,18 +36,18 @@ library(uuid)
   longBasin <- "USal"
   midBasin <- "U_Salmon"
   
-  yrPath <- "12"
-  yearPath <- "2012"
+  yrPath <- "11"
+  yearPath <- "2011"
   
   nameBasin <- "Upper Salmon" #this is from the Projects XML list of approved names
   
   dataPath <- "D:/OneDrive/work/GIS/8_day_1km_LST/LST_s12_"
-  mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/USal/"
+  mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/"
   
-  var <- "Mx"
-  longVar <- "Max"
-  dataVar <- "Mx8D" #name of the variable in the logger data
-  capVar <- "MAX"
+  var <- "Min"
+  longVar <- "Min"
+  dataVar <- "Min8D" #name of the variable in the logger data
+  capVar <- "MIN"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -59,7 +59,7 @@ This part reads the LST data and gap-fills using a cubic spline function
 
   
   
-  LST.in <- read.dbf(paste0(gisPath, "/", midBasin, "/", basin, "_", yrPath, "_LST.dbf"))
+  LST.in <- read.dbf(paste0(mainPath, "/", basin, "/", basin, "_", yrPath, "_LST.dbf"))
   PointID <- LST.in[,1]
   LST.in <- LST.in[,2:47]
   LST.in[LST.in<0.1] = NA
@@ -117,9 +117,9 @@ This part reads the LST data and gap-fills using a cubic spline function
 ```
 Plot to look
 ```{r}
-{plot(1:46, CLST.out[1000,1:46])
+{plot(1:46, CLST.out[1149,1:46])
   points(1:46, CLST.out[562, 1:46], pch=16, col="blue")
-  points(1:46, CLST.out[3545, 1:46], pch=16, col="green")
+  points(1:46, CLST.out[1000, 1:46], pch=16, col="green")
   points(1:46, CLST.out[1, 1:46], pch=16, col="red")
   points(1:46, CLST.out[800, 1:46], pch=16, col="lightblue")}
 ```
@@ -134,7 +134,7 @@ This part calculates the zonal mean of the daily LST for each RCA
   out_Preds <- read.dbf(paste0("../../", "LST", yrPath, "_", basin, "_interp.dbf"))
   
   
-  weights <- read.csv(paste0("../../", basin, "_rca_area_wgts.csv"), stringsAsFactors = FALSE)
+  weights <- read.dbf(paste0("../../", basin, "_rca_area_wgt.dbf"))
   weights[weights$area_wgt<0.01, "area_wgt"] = 0.01
   
   rcas <- unique(unlist(weights$RCAID))
@@ -145,7 +145,7 @@ This part calculates the zonal mean of the daily LST for each RCA
   
   for(i in rcas)	
     {
-      pixels <- weights[weights$RCAID == i, "GRIDCODE"]
+      pixels <- weights[weights$RCAID == i, "gridcode"]
       wgts <- weights[weights$RCAID == i, "area_wgt"]
       
       for (j in 1:46)
@@ -164,10 +164,10 @@ This part calculates the zonal mean of the daily LST for each RCA
 ```
 Plot to look
 ```{r}
-{plot(1:46, rca_zonal[rca_zonal$RCAID==560,1:46])
+{plot(1:46, rca_zonal[rca_zonal$RCAID==1151,1:46])
   points(1:46, rca_zonal[rca_zonal$RCAID==1431, 1:46], pch=16, col="blue")
   points(1:46, rca_zonal[rca_zonal$RCAID==636, 1:46], pch=16, col="green")
-  points(1:46, rca_zonal[rca_zonal$RCAID==2147, 1:46], pch=16, col="red")
+  points(1:46, rca_zonal[rca_zonal$RCAID==562, 1:46], pch=16, col="red")
   points(1:46, rca_zonal[800, 1:46], pch=16, col="lightblue")}
 ```
 Write out rca_zonal
@@ -245,7 +245,6 @@ Logger data formatting
   
   ind <- apply(Log.8Day.out, 1, function(x) !any(is.na(x)))
   Log.8Day.out <- Log.8Day.out[ind,]
-  colnames(Log.8Day.out)[1] <- "JulDay"
   
   write.csv(Log.8Day.out, paste0("../../", basin, "_logger_8D_", yearPath, ".csv"), row.names = FALSE)
   
@@ -437,8 +436,8 @@ Write stuff out
   write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=T)
   
 ```
-# ****Spring/Fall models***
-# Spring data model
+****Spring/Fall models***
+Spring data model
 ```{r}
   coeffs_out <- data.frame(Int=numeric(2), bLST=numeric(2), bLST2=numeric(2), bJul=numeric(2), bElev=numeric(2), bD=numeric(2), bDJul=numeric(2))
   metrics_out <- data.frame(r2=numeric(2), RMSE=numeric(2), p2=numeric(2), RMSEP=numeric(2), N_Sites=numeric(2), N=numeric(2))
@@ -454,7 +453,7 @@ Write stuff out
   plot(x, y, main="Spring data")
 ```
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + d)
+  mod <- lm(y ~ x + I(x^2) + z + e + d)
   sum_mod <- summary(mod)
   sum_mod
 ```
@@ -477,7 +476,7 @@ check for outliers
 ```
 rerun w/o outliers
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d, data=data.sp[-c(##), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d, data=data.sp[-c(335,296,307,309,353,355,399,401,381,447,427,285,445,274,263), ])
 ```
 recheck for outliers
 ```{r}
@@ -498,7 +497,7 @@ more tests: qqplot
 ```
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.sp <- data.sp[-c(##), ]
+  data.sp <- data.sp[-c(335,296,307,309,353,355,399,401,381,447,427,285,445,274,263), ]
   y <- data.sp$y
   x <- data.sp$x
   z <- data.sp$z
@@ -526,7 +525,7 @@ LOO PRESS stats
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + z + d, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + z + e + d, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
 ```
@@ -546,8 +545,8 @@ write out predicted, coeffs, & metrics
   coeffs_out[1,2] <- coeffs[2,1]
   coeffs_out[1,3] <- coeffs[3,1]
   coeffs_out[1,4] <- coeffs[4,1]
-  coeffs_out[1,5] <- 0
-  coeffs_out[1,6] <- coeffs[5,1]
+  coeffs_out[1,5] <- coeffs[5,1]
+  coeffs_out[1,6] <- coeffs[6,1]
   coeffs_out[1,7] <- 0
   
   metrics_out[1,1] <- sum_mod$adj.r.squared
@@ -568,7 +567,7 @@ Fall data model
   plot(x, y, main="fall")
 ```
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + d)
+  mod <- lm(y ~ x + I(x^2) + z + e)
   sum_mod <- summary(mod)
   sum_mod
 ```
@@ -618,7 +617,7 @@ if outliers need to be removed (otherwise skip)
   z <- data.fall$z
   e <- data.fall$e
   d <- data.fall$d
-  mod <- lm(y ~ x + I(x^2) + z + e)
+  mod <- lm(y ~ x + I(x^2) + z + e + d)
   sum_mod <- summary(mod)
 ```
 replot predicted v observed
@@ -639,7 +638,7 @@ LOO PRESS stats
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + z + d, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + z + e + d, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
 ```
@@ -663,8 +662,8 @@ write out predicted, coeffs, & metrics
   coeffs_out[2,2] <- coeffs[2,1]
   coeffs_out[2,3] <- coeffs[3,1]
   coeffs_out[2,4] <- coeffs[4,1]
-  coeffs_out[2,5] <- 0
-  coeffs_out[2,6] <- coeffs[5,1]
+  coeffs_out[2,5] <- coeffs[5,1]
+  coeffs_out[2,6] <- 0
   coeffs_out[2,7] <- 0
   
   metrics_out[2,1] <- sum_mod$adj.r.squared
@@ -756,8 +755,8 @@ Plot orig data
 ```
 Plot some reaches to take a peek
 ```{r}  
-  {plot(namesnum, LogPred.out[1000,1:46])
-  points(namesnum, LogPred.out[1234, 1:46], pch=16, col="blue")
+  {plot(namesnum, LogPred.out[1234,1:46])
+  points(namesnum, LogPred.out[1000, 1:46], pch=16, col="blue")
   points(namesnum, LogPred.out[3454, 1:46], pch=16, col="green")
   points(namesnum, LogPred.out[362, 1:46], pch=16, col="red")
   points(namesnum, LogPred.out[800, 1:46], pch=16, col="lightblue")}
@@ -882,8 +881,6 @@ Animation output
   namer <- sprintf('%03d', sequ)
   fix4 <- classIntervals(means, n = 10, style = "fixed",fixedBreaks=c(-1,4,8,10,12,14,16,18,20,22))
   fix4.colors <- findColours(fix4,pal=seis)
-  
-  graphicsPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/graphics/")
 ```
 ```{r}
   
@@ -892,7 +889,7 @@ Animation output
       
       namey <- gsub(paste0("T", var, yrPath, "_"), "", colnames(network@data)[i])
       
-      filename <- paste0(graphicsPath, namer[i-2], ".png", sep="")
+      filename <- paste0(modelPath, "/graphics/", namer[i-2], ".png", sep="")
       png(filename=filename, res = 300, width = 1500, height = 1500, units = "px", bg="black")
       
       u <- unique(network@data[,i])
@@ -946,9 +943,9 @@ Animation output
 ```
 This system call builds an mpeg out of the still graphics
 ```{r}
-setwd(paste0(graphicsPath))
+setwd(paste0(modelPath, "/graphics/"))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png USal_2012_8D_Mx.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png USal_2011_8D_Min.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}

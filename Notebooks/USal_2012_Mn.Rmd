@@ -1,5 +1,5 @@
 ---
-title: "USal network 2012 Max"
+title: "USal network 2012 Mean"
 output: html_notebook
 ---
 
@@ -44,10 +44,10 @@ library(uuid)
   dataPath <- "D:/OneDrive/work/GIS/8_day_1km_LST/LST_s12_"
   mainPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/USal/"
   
-  var <- "Mx"
-  longVar <- "Max"
-  dataVar <- "Mx8D" #name of the variable in the logger data
-  capVar <- "MAX"
+  var <- "Mn"
+  longVar <- "Mean"
+  dataVar <- "Mn8D" #name of the variable in the logger data
+  capVar <- "MEAN"
   
   modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar, "/")
   gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/"
@@ -948,7 +948,7 @@ This system call builds an mpeg out of the still graphics
 ```{r}
 setwd(paste0(graphicsPath))
   
-  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png USal_2012_8D_Mx.mpeg')
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 20 -morph 3 *.png USal_2012_8D_Mn.mpeg')
 ```
 Still graphic output for wiki or web or wev
 ```{r}
