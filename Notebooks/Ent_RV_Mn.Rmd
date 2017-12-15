@@ -1,0 +1,489 @@
+---
+title: "Ent RV modeling - Mean temp"
+output: html_notebook
+---
+NBCD Basal Area Weight [BAW] estimated veg height [EVH] in m
+
+```{r, message=FALSE}
+library(timeSeries)
+library(lattice)
+library(foreign)
+library(doBy)
+library(qpcR)
+library(pls)
+library(boot)
+library(Hmisc)
+library(readxl)
+library(lubridate)
+library(zoo)
+library(car)
+library(gvlma)
+library(ggplot2)
+library(foreign)
+library(DT)
+library(data.table)
+library(rgdal)
+library(raster)
+library(uuid)
+```
+```{r}
+  basin <- "Ent"
+  longBasin <- "Entiat"
+  
+  dataPath <- "D:/OneDrive/work/research/CHaMP/CHaMP_data/RiparianVeg/"
+  mainPath <- paste0("D:/OneDrive/work/research/CHaMP/CHaMP_data/", longBasin)
+  
+  gisPath <- "D:/OneDrive/work/research/CHaMP/GIS/coverages/Entiat"
+  
+  CRBproj <-  "+proj=aea +lat_1=20 +lat_2=60 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"
+```
+# ### Process spatial data ###
+# in Arc clip the veg rasters to the vbet extent
+# Read in veg rasters, convert to points
+```{r}
+
+  
+  BpS <- raster(paste0(gisPath, longBasin, "/", basin, "_Bps_vbet"))
+  Baw <- raster(paste0(gisPath, longBasin, "/", basin, "_Baw_vbet"))
+  
+  BpSpoints <- rasterToPoints(BpS, spatial=TRUE)
+  
+``` 
+# Basic geospatial processing of the veg grids - done once
+# intersect the Potentiatl veg points with the current veg raster
+```{r}
+  
+  Bawpoints <- extract(Baw, BpSpoints)
+  
+  Bawpoints <- as.data.frame(Bawpoints)
+  
+  xy <- BpSpoints@coords
+  Bawpoints$x <- xy[,1]
+  Bawpoints$y <- xy[,2]
+  write.dbf(Bawpoints, file="Bawpoints.dbf")
+   
+           
+  outptsname <- paste0(basin, "_Bps_pts") 
+  writeOGR(obj=BpSpoints, dsn=gisPath, layer = paste0(outptsname), driver="ESRI Shapefile", overwrite_layer = TRUE) 
+```
+```{r}
+  
+  
+```
+# Read those points into Arc, intersected with the RCAs, wrote out as .dbf
+# This part calculates the mean of the BAW EVH for each RCA
+```{r}
+
+  baw_rca <- read.dbf(paste0(basin, "_Baw_RCAID.dbf"))
+  colnames(baw_rca) <- c("Cur_EVH", "RCAID")
+  
+  bps_rca <- read.dbf(paste0(basin, "_BpS_RCAID.dbf"))
+  colnames(bps_rca) <- c("Pot_EVH", "RCAID")
+  
+  rcas <- unique(baw_rca$RCAID)
+  rca_zonal <- matrix(ncol=3, nrow=length(rcas))
+ 
+  for(i in 1:length(rcas))	
+    {
+      RCAID <- rcas[i]
+      
+      pixels <- baw_rca[baw_rca$RCAID == RCAID, "Cur_EVH"]
+      zonal_mn <- mean(pixels, na.rm = TRUE)
+      rca_zonal[i,1] <- zonal_mn
+      
+      pixels <- bps_rca[bps_rca$RCAID == RCAID, "Pot_EVH"]
+      zonal_mn <- mean(pixels, na.rm = TRUE)
+      rca_zonal[i,2] <- zonal_mn
+      
+      rca_zonal[i,3] <- RCAID
+    
+    }
+  
+  
+  colnames(rca_zonal) <- c("Cur_EVH", "Pot_EVH", "RCAID")
+  rca_zonal <- as.data.frame(rca_zonal)
+  rca_zonal$RCAID <- rcas
+  
+  write.csv(rca_zonal, paste0(basin, "_RV_RCA_zonal", ".csv"), row.names = FALSE)
+```
+# define outputs dataframe
+```{r}
+  
+  outputStats <- data.frame(mup=NULL)
+```
+# define variables to be modeled 
+```{r}
+  longVar <- "Mean"
+  var <- "Mn"
+```
+# This section is repeated for each year
+```{r}
+  rca_zonal <- read.csv(paste0(basin, "_RV_RCA_zonal", ".csv"), stringsAsFactors = FALSE)
+  
+  gisPath <- paste0("D:/OneDrive/work/research/CHaMP/GIS/coverages/", longBasin)
+  
+  netname <- paste0(basin, "_STHD_net")
+  
+  network <- readOGR(dsn=gisPath, layer = netname)
+  
+  fishrcas <- unique(network@data$RCAID)
+  
+  rcas <- fishrcas[fishrcas %in% rca_zonal$RCAID]
+  
+  Alldata <- data.frame(mup=NULL)
+```
+ set year
+```{r}
+  yrPath <- 15
+  yearPath <- "2015"
+  
+
+  
+  LST.in <- read.dbf(paste0(mainPath, "/", "LST", yrPath, "_", basin, "_RCA.dbf"))  
+  colnames(LST.in)[47] <-"RCAID"
+  
+  Predt.in <- read.dbf(paste0(mainPath, "/", yearPath, "/", longVar, "/", "predt", yearPath, "_", basin, "_8D_", var, ".dbf"))
+  
+  
+  model.data <- data.frame(mup=NULL)
+ 
+  
+  for (i in rcas) 
+    { 
+          RCAID <- i
+          Elev <- Predt.in$Elev[Predt.in$RCAID == i]
+          Pred.site <- unlist(Predt.in[Predt.in$RCAID == RCAID,23:33])
+          Pred.Mx <- max(Pred.site)
+          Pred.Mn <- mean(Pred.site)
+    
+          LST.site <- unlist(LST.in[LST.in$RCAID == RCAID,23:33])
+          mnLST <- mean(LST.site)
+          mxLST <- max(LST.site)
+          rngLST <- max(LST.site) - min(LST.site)
+          year <- yearPath
+          Cur.EVH <- rca_zonal[rca_zonal$RCAID == RCAID,"Cur_EVH"]
+          Pot.EVH <- rca_zonal[rca_zonal$RCAID == RCAID,"Pot_EVH"]
+          
+          data <- data.frame(RCAID=RCAID, Elev=Elev, PredMxMn=Pred.Mx, PredMnMn=Pred.Mn, mnLST=mnLST, mxLST=mxLST, rngLST=rngLST, year=year, Cur_EVH=Cur.EVH, Pot_EVH=Pot.EVH, VegDif=Pot.EVH-Cur.EVH)
+          model.data <- rbind(model.data, data)
+         
+    }
+  
+
+  Alldata <- rbind(Alldata, model.data)
+```
+# Parse out restorable sites
+```{r}
+  
+  RestData <- Alldata[Alldata$VegDif > 0,]
+
+```
+#Correlation matrix
+```{r}
+cor.full <- RestData[c(2:7,9:10)]
+cor(cor.full)
+```
+
+# plot linear relationship between temp and veg - max mean
+```{r}
+
+  {plot(RestData$Cur_EVH, RestData$PredMxMn, main = paste0("Temp v current EVH all years, max mean"))
+
+  abline(lm(RestData$PredMxMn ~ RestData$Cur_EVH), col="blue")}
+```
+# Models
+# ### Max mean
+```{R}
+  y <- RestData$PredMxMn
+  x <- RestData$Cur_EVH
+  xPot <- RestData$Pot_EVH
+  xPot <- as.data.frame(xPot)
+  colnames(xPot) <- "x"
+```
+```{r}
+  mod <- lm(y ~ x)
+  sum_mod <- summary(mod)
+  sum_mod
+  
+```
+# add the potential temp to the data frame
+```{r}
+    
+  pred.y <- predict(mod, newdata = xPot)
+
+  RestData$Pot_MxMn <- pred.y
+```
+# mean temp difference
+```{r}
+  data <- data.frame(PotDifMxMn=mean(RestData$PredMxMn - RestData$Pot_MxMn))
+  outputStats <- rbind(outputStats, data)
+  
+```
+# ### Mean mean
+# plot linear relationship between temp and veg - mean mean
+```{r}
+
+  {plot(RestData$Cur_EVH, RestData$PredMnMn, main = paste0("Temp v current EVH all years, mean mean"))
+
+  abline(lm(RestData$PredMnMn ~ RestData$Cur_EVH), col="blue")}
+```
+ # model
+```{R}
+  y <- RestData$PredMnMn
+  x <- RestData$Cur_EVH
+  xPot <- RestData$Pot_EVH
+  xPot <- as.data.frame(xPot)
+  colnames(xPot) <- "x"
+```
+```{r}
+  mod <- lm(y ~ x)
+  sum_mod <- summary(mod)
+  sum_mod
+```
+```{r}
+  pred.y <- predict(mod, newdata = xPot)
+ 
+  RestData$Pot_MnMn <- pred.y
+```
+# mean temp difference
+```{r}
+  data <- data.frame(PotDifMnMn=mean(RestData$PredMnMn - RestData$Pot_MnMn))
+  outputStats <- cbind(outputStats, data)
+  
+```
+# annual parse
+# All data
+```{r}
+  #y2011 <- Alldata[Alldata$year == 2011,]
+  y2012 <- Alldata[Alldata$year == 2012,]
+  y2013 <- Alldata[Alldata$year == 2013,]
+  y2014 <- Alldata[Alldata$year == 2014,]
+  y2015 <- Alldata[Alldata$year == 2015,]
+```
+# Restoration site data
+```{r}
+  #y2011rest <- RestData[RestData$year == 2011, c("RCAID", "Pot_MxMn", "Pot_MnMn")]
+  y2012rest <- RestData[RestData$year == 2012, c("RCAID", "Pot_MxMn", "Pot_MnMn")]
+  y2013rest <- RestData[RestData$year == 2013, c("RCAID", "Pot_MxMn", "Pot_MnMn")]
+  y2014rest <- RestData[RestData$year == 2014, c("RCAID", "Pot_MxMn", "Pot_MnMn")]
+  y2015rest <- RestData[RestData$year == 2015, c("RCAID", "Pot_MxMn", "Pot_MnMn")]
+```
+# Add potential temp to full network temp estimates
+```{r}
+ 
+  # y2011out <- merge(y2011, y2011rest, by="RCAID", all.x=TRUE)
+  # y2011out$Pot_MxMn[is.na(y2011out$Pot_MxMn)] <- y2011out$PredMxMn[is.na(y2011out$Pot_MxMn)]
+  # y2011out$Pot_MnMn[is.na(y2011out$Pot_MnMn)] <- y2011out$PredMnMn[is.na(y2011out$Pot_MnMn)]
+  # 
+  y2012out <- merge(y2012, y2012rest, by="RCAID", all.x=TRUE)
+  y2012out$Pot_MxMn[is.na(y2012out$Pot_MxMn)] <- y2012out$PredMxMn[is.na(y2012out$Pot_MxMn)]
+  y2012out$Pot_MnMn[is.na(y2012out$Pot_MnMn)] <- y2012out$PredMnMn[is.na(y2012out$Pot_MnMn)]
+  
+  y2013out <- merge(y2013, y2013rest, by="RCAID", all.x=TRUE)
+  y2013out$Pot_MxMn[is.na(y2013out$Pot_MxMn)] <- y2013out$PredMxMn[is.na(y2013out$Pot_MxMn)]
+  y2013out$Pot_MnMn[is.na(y2013out$Pot_MnMn)] <- y2013out$PredMnMn[is.na(y2013out$Pot_MnMn)]
+  
+  y2014out <- merge(y2014, y2014rest, by="RCAID", all.x=TRUE)
+  y2014out$Pot_MxMn[is.na(y2014out$Pot_MxMn)] <- y2014out$PredMxMn[is.na(y2014out$Pot_MxMn)]
+  y2014out$Pot_MnMn[is.na(y2014out$Pot_MnMn)] <- y2014out$PredMnMn[is.na(y2014out$Pot_MnMn)]
+  
+  y2015out <- merge(y2015, y2015rest, by="RCAID", all.x=TRUE)
+  y2015out$Pot_MxMn[is.na(y2015out$Pot_MxMn)] <- y2015out$PredMxMn[is.na(y2015out$Pot_MxMn)]
+  y2015out$Pot_MnMn[is.na(y2015out$Pot_MnMn)] <- y2015out$PredMnMn[is.na(y2015out$Pot_MnMn)]
+  
+  RestDataOut <- RestData[, c("RCAID", "Pot_MxMn", "Pot_MnMn")]
+  AlldataOut <- merge(Alldata, RestDataOut, all.x=TRUE)
+  AlldataOut$Pot_MxMn[is.na(AlldataOut$Pot_MxMn)] <- AlldataOut$PredMxMn[is.na(AlldataOut$Pot_MxMn)]
+  AlldataOut$Pot_MnMn[is.na(AlldataOut$Pot_MnMn)] <- AlldataOut$PredMnMn[is.na(AlldataOut$Pot_MnMn)]
+```
+write it out
+```{r}
+  write.table(x=AlldataOut, append=F,row.names=F, file = paste0("11_15/", longVar, "/", basin, "_11-15_pot_Mn_temp.csv"), sep = ",", col.names=T)
+
+  # write.table(x=y2011out, append=F,row.names=F, file = paste0("2011/", longVar, "/", basin, "_2011_pot_Mn_temp.csv"), sep = ",", col.names=T)
+
+  write.table(x=y2012out, append=F,row.names=F, file = paste0("2012/", longVar, "/", basin, "_2012_pot_Mn_temp.csv"), sep = ",", col.names=T)
+  
+  write.table(x=y2013out, append=F,row.names=F, file = paste0("2013/", longVar, "/", basin, "_2013_pot_Mn_temp.csv"), sep = ",", col.names=T)
+  
+  write.table(x=y2014out, append=F,row.names=F, file = paste0("2014/", longVar, "/", basin, "_2014_pot_Mn_temp.csv"), sep = ",", col.names=T)
+  
+  write.table(x=y2015out, append=F,row.names=F, file = paste0("2015/", longVar, "/", basin, "_2015_pot_Mn_temp.csv"), sep = ",", col.names=T)
+  
+  write.csv(outputStats, file = paste0("11_15/", longVar, "/", basin, "_11-15_mean_Diff.csv"), row.names=FALSE)
+```
+# Basin mean change in stream temperature (output to screen)
+```{r, message=FALSE}
+
+  outputStats
+```
+Geospatial data output
+```{r, message=FALSE}
+
+  gisBasin <- "Entiat"
+
+  gisPath <- paste0("D:/OneDrive/work/research/CHaMP/GIS/coverages/", gisBasin)
+  
+  netname <- paste0(basin, "_STHD_net")
+  
+  network <- readOGR(dsn=gisPath, layer = netname)
+  network@data <- network@data[,-1]
+  
+```
+# merging and writing out
+```{r}
+  
+  longVar <- "Mean"
+  var <- "Mn"
+  yearPath <- "2015"
+
+  outPath <- paste0(mainPath, "/RipVeg/",yearPath,"/",longVar)
+  
+  potTemp <- read.csv(paste0(outPath, "/", basin, "_", yearPath, "_pot_", var, "_temp.csv"), stringsAsFactors = FALSE)
+  
+  netOut<- merge(network, potTemp, by = "RCAID", all.x=FALSE)                    
+                      
+  outnetname <- paste0(basin, "_", yearPath, "_Pot_", var, "_temp")
+  
+  writeOGR(obj=netOut, dsn=outPath, layer = paste0(outnetname), driver="ESRI Shapefile", overwrite_layer = TRUE)
+```
+This part generates the project.rs.xml file 
+```{r, message=FALSE}
+
+  Realizguid = UUIDgenerate(F)
+  
+  now <- Sys.Date()
+  
+  modelPath <- paste0(mainPath, "/RipVeg/", yearPath, "/", longVar, "/")
+                      
+  capVar <- "MEAN"
+  
+  nameBasin <- "Entiat"
+
+```
+Start writing project.rs.xml file here
+```{r}
+
+cat("", file=paste(modelPath,"project.rs.xml",sep=""))
+
+cat(paste("","<?xml version=\"1.0\" encoding=\"utf-8\"?>
+<Project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
+  xsi:noNamespaceSchemaLocation=\"https://raw.githubusercontent.com/Riverscapes/Program/master/Project/XSD/V1/Project.xsd\">
+
+  <Name>potential_stream_temperature_project</Name>
+  <ProjectType>STREAMTEMPPOT",capVar,"</ProjectType>
+
+  <MetaData>
+    <!--This first metadata exists only to place this project in the riverscapes project-->
+    <Meta name=\"description\">Summer mean and max potential stream temperature derived from potential riparian vegetation height</Meta>
+    <Meta name=\"HUCID\">17060201</Meta>
+		<Meta name=\"Region\">CRB</Meta>
+    <Meta name=\"Watershed\">",nameBasin,"</Meta>
+    <Meta name=\"Year\">", yearPath,"</Meta>
+  </MetaData>
+
+ <Realizations>
+    <StreamTemperature guid=\"",Realizguid,"\" id=\"streamtemp\" dateCreated=\"",now,"\" productVersion=\"1.0\">
+      <Name>Potential Stream Temperature for ",nameBasin, " ",yearPath,"</Name>
+
+      <MetaData>
+        <!--This next metadata relates to this particular realization-->
+        <Meta name=\"Current_vegetation_dataset\">https://www.usna.edu/Users/oceano/pguth/md_help/html/nbcd.htm</Meta>
+        <Meta name=\"Potential_vegetation_dataset\">https://www.landfire.gov/NationalProductDescriptions24.php</Meta>
+        <Meta name=\"Current_temperature_estimates\">https://github.com/SouthForkResearch/StreamTemperature/wiki</Meta>
+        <Meta name=\"Code_wiki\">https://github.com/SouthForkResearch/StreamTemperature/wiki</Meta>
+      </MetaData>
+
+    <Analyses>
+      <Analysis>
+        <Name>Stream Temp Analysis</Name>
+          <Outputs>
+
+            <Vector id=\"network\">
+              <Name>Network_estimate_shapefile</Name>
+              <Path>",basin,"_",yearPath,"_Pot_",var,"_temp",".shp</Path>
+              <MetaData>
+                <Meta name=\"description\">Shapefile of network with summer mean mean and max mean potential temperature estimates</Meta>
+              </MetaData>
+            </Vector>
+
+            <CSV id=\"estimates\">
+              <Name>Potential_temp_estimates_csv</Name>
+              <Path>",basin, "_", yearPath,"_pot_",var,"_temp.csv</Path>
+              <MetaData>
+                <Meta name=\"description\">csv version of the potential temp estimates</Meta>
+              </MetaData>
+            </CSV>
+
+          </Outputs>
+        </Analysis>
+      </Analyses>
+    </StreamTemperature>
+  </Realizations>
+</Project>
+",sep=""), file=paste(modelPath,"project.rs.xml",sep=""), append=T)
+
+```
+Still graphic output for wiki or web or wev
+```{r}
+
+  yearPath <- "2015"
+  var <- "Mn"
+  longVar <- "Mean"
+  
+  outPath <- paste0(mainPath, "/RipVeg/",yearPath,"/",longVar)
+  
+  outnetname <- paste0(basin, "_", yearPath, "_Pot_", var, "_temp")
+  
+  network <- readOGR(dsn=outPath, layer = outnetname)
+```
+```{r}
+  
+seis = c("#AA0000", "#D00000", "#F70000", "#FF1D00", "#FF4400", "#FF6A00", "#FF9000", "#FFB700", "#FFDD00", "#FFE200", "#BDFF0C", "#73FF1A", "#3FFA36", "#16F45A", "#00D08B", "#0087CD", "#0048FA", "#0024E3")
+  seis <- rev(seis)
+  
+  i <- 5  
+  
+  
+    fix3 <- classIntervals(network@data[,i], n = 12, style = "fixed",fixedBreaks=c(-1,2,4,6,8,10,12,14,16,18,20,22))
+    fix3.colors <- findColours(fix3,pal=seis)
+        
+  filename <- paste0(outPath, "/graphics/", basin, "_", yearPath, "_cur_mean_", var, ".png", sep="")
+    png(filename=filename, res = 300, width = 1500, height = 1500, units = "px", bg="white")
+    
+  
+        
+        plot(network, col=fix3.colors, bg="white", fg="black")
+        
+        
+        # legend("topright", fill = attr(fix3.colors, "palette"), title="°C",legend = c("0-6","6-8","8-10","10-12","12-14","14-16","16-18","18-20", "20-22", "22+"), bty = "n", cex=.5, inset=c(0,0), text.col="black");
+      
+        # title(paste0("Entiat current condition summer Mean ", longVar, " (°C)"), line=-0.2, adj=0.1, col.main="black", col.sub="black", outer=FALSE, cex.main=0.5)
+        
+       
+```
+```{r}
+  
+seis = c("#AA0000", "#D00000", "#F70000", "#FF1D00", "#FF4400", "#FF6A00", "#FF9000", "#FFB700", "#FFDD00", "#FFE200", "#BDFF0C", "#73FF1A", "#3FFA36", "#16F45A", "#00D08B", "#0087CD", "#0048FA", "#0024E3")
+  seis <- rev(seis)
+  
+  i <- 14  
+  
+  
+    fix3 <- classIntervals(network@data[,i], n = 12, style = "fixed",fixedBreaks=c(-1,2,4,6,8,10,12,14,16,18,20,22))
+    fix3.colors <- findColours(fix3,pal=seis)
+        
+  filename <- paste0(outPath, "/graphics/", basin, "_", yearPath, "_pot_mean_", var, ".png", sep="")
+    png(filename=filename, res = 300, width = 1500, height = 1500, units = "px", bg="white")
+    
+  
+        
+        plot(network, col=fix3.colors, bg="white", fg="black")
+        
+        
+        legend("topright", fill = attr(fix3.colors, "palette"), title="°C",legend = c("0-6","6-8","8-10","10-12","12-14","14-16","16-18","18-20", "20-22", "22+"), bty = "n", cex=.5, inset=c(0,0), text.col="black");
+      
+        # title(paste0("Entiat potential condition summer Mean ", longVar, " (°C)"), line=-0.2, adj=0.1, col.main="black", col.sub="black", outer=FALSE, cex.main=0.5)
+        
+       
+```
