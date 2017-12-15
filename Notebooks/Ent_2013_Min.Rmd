@@ -206,7 +206,7 @@ write.csv(Dv.8Day.out, paste0("../", basin, "_", yearPath, "_Dv_8Day", ".csv"), 
 
 Model building
 ```{r}
-  Log.in <- read.csv(paste0("../../", basin, "_logger_8D_", yearPath, ".csv"), stringsAsFactors = FALSE)
+  Log.in <- read.csv(paste0("../../", basin, "_logger_8D_", yearPath,".csv"), stringsAsFactors = FALSE)
   
 
   ID.in <- read.csv(paste0("../../", basin, "_sites_elev_rca.csv"), stringsAsFactors = FALSE) 
@@ -214,7 +214,6 @@ Model building
   
   LST.in <- read.dbf(paste0("../../", "LST", yrPath, "_", basin, "_RCA.dbf"))
   colnames(LST.in)<-gsub("X13", "", colnames(LST.in))
-  colnames(LST.in)[47] <- "RCAID"
   newnamesnum <- as.numeric(colnames(LST.in)[1:46]);
   
   Dv.in <- read.csv(paste0("../", basin, "_", yearPath, "_Dv_8Day", ".csv"), stringsAsFactors = FALSE)
@@ -235,7 +234,7 @@ Model building
       
       LST.site <- matrix(ncol=3, nrow=46)
       LST.site[,1] <- as.numeric(unlist(colnames(LST.in)[1:46]))
-      LST.site[,2] <- unlist(LST.in[LST.in$RCAID == RCAID, 1:46])
+      LST.site[,2] <- unlist(LST.in[RCAID,1:46])
       LST.site <- data.frame(LST.site)
       colnames(LST.site) <- c("JulDay", "LST", "Elev")
       LST.site[3] <- Elev
@@ -396,7 +395,7 @@ Spring data model
   plot(x, y, main="Spring data")
 ```
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z)
+  mod <- lm(y ~ x + I(x^2) + z + e + d)
   sum_mod <- summary(mod)
   sum_mod
 ```
@@ -446,7 +445,7 @@ if outliers need to be removed (otherwise skip)
   z <- data.sp$z
   e <- data.sp$e
   d <- data.sp$d
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z)
+  mod <- lm(y ~ x + I(x^2) + z + e + d)
   sum_mod <- summary(mod)
 ```
 format the data for prediction output 
@@ -469,7 +468,7 @@ LOO PRESS stats
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + z + e + d + d*z, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + z + e + d, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
 ```
@@ -491,7 +490,7 @@ write out predicted, coeffs, & metrics
   coeffs_out[1,4] <- coeffs[4,1]
   coeffs_out[1,5] <- coeffs[5,1]
   coeffs_out[1,6] <- coeffs[6,1]
-  coeffs_out[1,7] <- coeffs[7,1]
+  coeffs_out[1,7] <- 0
   
   metrics_out[1,1] <- sum_mod$adj.r.squared
   metrics_out[1,2] <- sum_mod$sigma
@@ -511,7 +510,7 @@ Fall data model
   plot(x, y, main="fall")
 ```
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z)
+  mod <- lm(y ~ x + I(x^2) + z + e + d)
   sum_mod <- summary(mod)
   sum_mod
 ```
@@ -534,7 +533,7 @@ check for outliers
 ```
 rerun w/o outliers (if necessary)
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z, data=data.fall[-c(22,51,52,53), ])
+  mod <- lm(y ~ x + I(x^2) + z + e + d, data=data.fall[-c(51,52,53), ])
 ```
 recheck for outliers
 ```{r}
@@ -556,13 +555,13 @@ more diagonstics: qqplot
 
 if outliers need to be removed (otherwise skip)
 ```{r}
-  data.fall <- data.fall[-c(22,51,52,53), ]
+  data.fall <- data.fall[-c(51,52,53), ]
   y <- data.fall$y
   x <- data.fall$x
   z <- data.fall$z
   e <- data.fall$e
   d <- data.fall$d
-  mod <- lm(y ~ x + I(x^2) + z + e + d + d*z)
+  mod <- lm(y ~ x + I(x^2) + z + e + d)
   sum_mod <- summary(mod)
   sum_mod
 ```
@@ -581,12 +580,12 @@ Look at the residuals
   plot(pred.y, mod$residuals, main="Model diagnostics Fall Leg", xlab="Predicted", ylab="Residuals")
 ```
 LOO PRESS stats
-```{r, message=FALSE}
+```{r}
   pressstat_sum <- PRESS(sum_mod, verbose = "FALSE")
   RMSEP <- sqrt(mean((pressstat_sum$residuals)^2))
   
   library(pls)
-  mod2 <- plsr(y ~ x + I(x^2) + z + e + d + d*z, validation = "LOO")
+  mod2 <- plsr(y ~ x + I(x^2) + z + e + d, validation = "LOO")
   p2 <- R2(mod2)
   detach("package:pls", unload=TRUE)
 ```
@@ -607,7 +606,7 @@ write out predicted, coeffs, & metrics
   coeffs_out[2,4] <- coeffs[4,1]
   coeffs_out[2,5] <- coeffs[5,1]
   coeffs_out[2,6] <- coeffs[6,1]
-  coeffs_out[2,7] <- coeffs[7,1]
+  coeffs_out[2,7] <- 0
   
   metrics_out[2,1] <- sum_mod$adj.r.squared
   metrics_out[2,2] <- post_mod$sigma
@@ -617,9 +616,9 @@ write out predicted, coeffs, & metrics
   metrics_out[2,6] <- length(y)
 
   
-  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=NA)
+  write.table(x=coeffs_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_coeffs_", var, ".csv"), sep = ",", col.names=T)
   
-  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=NA)
+  write.table(x=metrics_out, append=F,row.names=T, file = paste0("All_data_", basin, "_", yearPath, "_mod_metrics_", var, ".csv"), sep = ",", col.names=T)
   
 ```
 plot the full year of predicted v observed
@@ -699,16 +698,16 @@ Plot some reaches to take a peek
   points(namesnum, LogPred.out[350, 1:46], pch=16, col="blue")
   points(namesnum, LogPred.out[100, 1:46], pch=16, col="green")
   points(namesnum, LogPred.out[1, 1:46], pch=16, col="red")
-  points(namesnum, LogPred.out[80, 1:46], pch=16, col="lightblue")}
+  points(namesnum, LogPred.out[121, 1:46], pch=16, col="lightblue")}
   
 ```
 This parts formats the error by day/site info
 
 ```{r}
 
-  Log.in <- read.csv(paste0("../../", basin, "_", yearPath, "_logger_data.csv"), stringsAsFactors = FALSE)
+  Log.in <- read.csv(paste0("../../", basin, "_logger_8D_", yearPath, ".csv"), stringsAsFactors = FALSE)
+ 
   
-
   ID.in <- read.csv(paste0("../../", basin, "_sites_elev_rca.csv"), stringsAsFactors = FALSE) 
   colnames(ID.in)[9] <- "Elev"
 ```
@@ -828,7 +827,8 @@ Animation output
   namer <- sprintf('%03d', sequ)
   fix4 <- classIntervals(means, n = 10, style = "fixed",fixedBreaks=c(-1,2,4,6,8,10,12,14,16,18))
   fix4.colors <- findColours(fix4,pal=seis)
-  
+```
+```{r}
   for (i in 3:48)
     {
       
@@ -868,6 +868,7 @@ Animation output
       par(tmp2)
       arrows(namesnum[1:(i-2)], yplus[1:(i-2)], namesnum[1:(i-2)], yminus[1:(i-2)], length=0, lwd=5, code=3, lend=0, col="gray20")
       par(op)
+      
       tmp2 <- subplot(
         plot(namesnum[1:(i-2)], means[1:(i-2)], col=fix4.colors, pch=16, bty="n", xlim=c(0,360), ylim=c(0,20), cex.main=.8, main="Basin mean", adj=0, xlab='',ylab='', col.lab="white", cex.axis=0.5, cex.lab = 0.25, col.axis="white", col.main = "white", bg="black"), 
         x=grconvertX(c(0.1,0.45), from='npc'), 
