@@ -1,0 +1,291 @@
+---
+title: "Code to output fish animations: 2 or 4 degree"
+output: html_notebook
+---
+
+This set of R scripts processes logger data for predictive stream temperature modeling
+Created: 21 Feb 2017
+Used for all watersheds and all years by changing the basin names and year paths 
+
+Stage setting:
+```{r, message=FALSE}
+library(timeSeries)
+library(lattice)
+library(foreign)
+library(doBy)
+library(qpcR)
+library(pls)
+library(boot)
+library(Hmisc)
+library(readxl)
+library(lubridate)
+library(zoo)
+library(car)
+library(gvlma)
+library(ggplot2)
+library(rgdal)
+library(raster)
+library(RColorBrewer)
+library(classInt)
+library(uuid)
+library(plyr)
+```
+Processing stuff
+```{r, message=FALSE, warning=TRUE}
+  
+  basin <- "Ent"
+  
+  longBasin <- "Entiat"
+  nameBasin <- "Entiat"
+  
+  mainPath <- paste0("D:/OneDrive/work/research/CHaMP/CHaMP_data/") 
+  otherOutPath <- paste0("D:/OneDrive/work/research/CHaMP/CHaMP_data/FishMap/", longBasin, "/")
+  
+  
+  var <- "Mx"
+  longVar <- "Max"
+  
+  
+  gisPath <- paste0("D:/OneDrive/work/research/CHaMP/GIS/coverages/", longBasin)
+  
+  namer <- c(1,9,17,25,33,41,49,57,65,73,81,89,97,105,113,121,129,137,145,153,161,169,177,185,193,201,209,217,225,233,241,249,257,265,273,281,289,297,305,313,321,329,337,345,353,361)
+  namey <- sprintf('%03d', namer)
+```
+Parsing network extent
+```{r}
+ rcaName <- paste0(basin, "_STHD_net")
+    rca <- readOGR(dsn=gisPath, layer = rcaName)
+    rcas <- rca@data
+    rcas <- rcas[,c("RCAID", "STHD_IP", "CHNK_IP", "LENGTH")]
+    rcas$STHD_IP <- as.character(rcas$STHD_IP)
+    rcas$CHNK_IP <- as.character(rcas$CHNK_IP)
+    # rcas$RCAID <- as.numeric(rcas$RCAID)
+    
+    #rca <- read.csv(paste0(mainPath, "/", longBasin, "/", rcaName, ".csv"), stringsAsFactors = FALSE)
+    
+    
+    
+    # ext <- "Chinook"
+    # 
+    # if (ext != "Full") {
+    #   ind <- apply(rcas, 1, function(x) x == ext)
+    #   ANY <- apply(ind, 2, any)
+    #   rcasTest <- rcas[ANY,]
+    #   rcaList <- unique(rcasTest$RCAID)
+    # } else{
+    #   rcaList <- rcas$RCAID
+    # }
+    # 
+    # 
+    # totLen <- sum(rcasTest$LENGTH, na.rm=TRUE) 
+    
+   rcas <- subset(rcas, STHD_IP == "Steelhead") 
+  #  rcas <- as.matrix(rcas)
+  #  ind <- apply(rcas, 1, function(x) !any(is.na(x)))
+  # rcas3 <- rcas[ind,]
+  # rcas3 <- unique(rcas3)
+  rcaList <- unique(rcas$RCAID)
+  
+  totLen <- sum(rcas$LENGTH, na.rm=TRUE) 
+   
+```
+Animation output
+```{r}
+
+  fish = c("#C1CDCD", "#00FFFF", "#0000CD")
+  #fish <- rev(fish)
+
+  names.out <- colnames(network@data[3:48])
+  namesnum <- as.numeric(gsub(paste0("T", var, yrPath, "_"), "", colnames(network@data[3:48])))
+```
+Set dispPerc once at the begining
+```{r}
+  dispPerc <- numeric(102)
+  dispPerc2 <- numeric(102)
+  
+  sequ <- c(1:102) # 
+  temp <- 2
+  temp2 <- 4
+  #namer <- sprintf('%03d', sequ)
+  table.out <- data.frame(Year=numeric(102), JulianDay=numeric(102), Length=numeric(102), Total=numeric(102), Percent=numeric(102))
+  
+```
+read in the spatial data
+```{r, message=FALSE}
+
+  yrPath <- "14"
+  yearPath <- "2014"
+  modelPath <- paste0(mainPath, longBasin, "/", yearPath, "/", longVar)
+  dataPath <- paste0(modelPath, longBasin, "/", yearPath, "/", longVar)
+  outnetname <- paste0(basin, "_", yearPath, "_8D_", var)
+
+  netin <- readOGR(dsn=modelPath, outnetname)
+  #colnames(netin@data)[1] <- "RCAID"
+  #netin@data$RCAID <- as.numeric(netin@data$RCAID)
+  #netin@data$CHNK_IP <- as.character(netin@data$CHNK_IP)
+  #network = netin[netin@data$CHNK_IP == "Chinook",]
+  network = netin[netin$RCAID %in% rcaList,]
+  #network@data <- network@data[,c(50,1:49)] 
+   
+```
+images
+```{r}
+  for (i in 86:102) # 2011 1:17, 2012 18:34, 2013 35:51, 2014 52:68, 2015 69:85, 2016 86:102;   7-23 
+    {
+      
+      j <- i-79 # 2011 i+6, 2012 i-11, 2013 i-28, 2014 i-45, 2015 i-62, 2016 i-79
+    
+      filename <- paste0(otherOutPath, "graphics/", sprintf('%03d', sequ[i]), ".png", sep="")
+      png(filename=filename, res = 300, width = 1500, height = 1500, units = "px", bg="black")
+      
+      u <- length(which(network@data[,j]>temp)) 
+      k <- dim(network@data)[1]
+      tryThis <- which(network@data[,j]>temp)
+      subRCA <- network@data[tryThis, "RCAID"]
+      subLen <- subset(rcas, RCAID %in% subRCA)
+      percLen <- 100*(sum(subLen$LENGTH)/totLen)
+      dispPerc[i] <- percLen
+
+      tryThis2 <- which(network@data[,j]>temp2)
+      subRCA2 <- network@data[tryThis2, "RCAID"]
+      subLen2 <- subset(rcas, RCAID %in% subRCA2)
+      percLen2 <- 100*(sum(subLen2$LENGTH)/totLen)
+      dispPerc2[i] <- percLen2
+
+       table.out[j,1] <- yearPath
+       table.out[j,2] <- namey[i]
+       table.out[j,3] <- sum(subLen$LENGTH)
+       table.out[j,4] <- totLen
+       table.out[j,5] <- percLen
+                         
+      if(u< 1){
+        fix3.colors <- rep("#0000CD",k)
+      } else {
+      fix3 <- classIntervals(network@data[,j], style = "fixed",fixedBreaks=c(0,2,4,25)) #change temp range as needed
+      fix3.colors <- findColours(fix3,pal=fish)
+      }
+      
+
+      plot(network, col=fix3.colors, bg="black", fg="white")
+      
+      
+    legend(x=grconvertX(c(0.79, 0.95), from='npc'),
+             y=grconvertY(c(0.35, 0.55), from='npc'), fill = c("#0000CD", "#00FFFF", "#C1CDCD"), title="8-day mean max", legend = c("> 4 °C", "2-4 °C", "< 2 °C"), bty = "n", cex=.5, inset=c(.1,0), text.col="white");
+
+    legend(x=grconvertX(c(0.39, 0.49), from='npc'),
+             y=grconvertY(c(0.0, 0.08), from='npc'), fill = c("lightblue", "cyan2"), legend = c("> 2 °C", "> 4 °C"), bty = "n", cex=.4, inset=c(0,0), text.col="white");
+      
+      title(paste0("Available steelhead spawning habitat in the ", nameBasin,", 1 Feb - 15 June, 2011-2016"), line=-0.1, adj=.80, col.main="white", col.sub="white", outer=FALSE, cex.main=0.6, cex.sub=0.5)
+      mtext(paste0("Julian Day ", namey[j-2]),side =1, outer=TRUE, line=-4, col="white", cex=.5)
+      mtext(paste0(yearPath),side =1, outer=TRUE, line=-3, col="white", cex=.75)
+        
+      #change xlim
+       tmp2 <- subplot(
+        plot(sequ[1:i], dispPerc[1:i], type="l", col="lightblue", bty="n", ylim=c(0,100), xlim=c(1,102), xlab="      2011    2012    2013    2014    2015    2016", ylab="", cex.lab=.8, cex.main=.9, main="Percent usable stream length", adj=0, line=.5, col.lab="white", col.main = "white", cex.axis=0.6, col.axis="white", bg="black", yaxp=c(0,100,2), xaxp=c(2011,2016,2)),
+        
+        x=grconvertX(c(0.02,0.45), from='npc'), 
+        y=grconvertY(c(0.02, 0.20), from='npc'),
+        size=c(1,1.5), vadj=0.5, hadj=0.5, 
+        pars=list( mar=c(0,0,0,0)+0.1, cex=0.5))
+       
+       tmp2 <- subplot(
+        plot(sequ[1:i], dispPerc2[1:i], type="l", col="cyan2", bty="n", ylim=c(0,100), xlim=c(1,102), xlab="      2011    2012    2013    2014    2015    2016", ylab="", cex.lab=.8, cex.main=.9, main="Percent usable stream length", adj=0, line=.5, col.lab="white", col.main = "white", cex.axis=0.6, col.axis="white", bg="black", yaxp=c(0,100,2), xaxp=c(2011,2016,2)),
+        
+        x=grconvertX(c(0.02,0.45), from='npc'), 
+        y=grconvertY(c(0.02, 0.20), from='npc'),
+        size=c(1,1.5), vadj=0.5, hadj=0.5, 
+        pars=list( mar=c(0,0,0,0)+0.1, cex=0.5))
+        
+      dev.off()
+      
+    }
+    
+  
+```
+This system call builds an mpeg out of the still graphics
+```{r}
+setwd(paste0(otherOutPath, "/graphics/"))
+  
+  system('"C:/Program Files/ImageMagick-7.0.1-Q16/convert.exe" -delay 15 -morph 3 *.png Ent_STHD_4.mpeg')
+```
+Find the peak low for graphing
+```{r}
+      
+
+      m <- which.min(dispPerc)
+      #make sure the correct year's network is loaded
+
+```
+write out the graphic
+```{r}
+      i <- length(dispPerc)
+      j <- m-45 # pull this from the appropriate year 2011 i+6, 2012 i-11, 2013 i-28, 2014 i-45, 2015 i-62, 2016 i-79
+      
+      namey <- namesnum[j]
+      filename <- paste0(otherOutPath, "output/", basin, "_STHD_", temp2, "_still", ".png", sep="")
+      png(filename=filename, res = 300, width = 1500, height = 1500, units = "px", bg="white")
+      
+      
+      fix3 <- classIntervals(network@data[,j], style = "fixed",fixedBreaks=c(0,2,4,25)) #change temp range as needed
+      fix3.colors <- findColours(fix3,pal=fish)
+      
+      
+      
+      
+      plot(network, col=fix3.colors, bg="white", fg="black")
+      
+      
+    legend(x=grconvertX(c(0.79, 0.95), from='npc'),
+             y=grconvertY(c(0.35, 0.55), from='npc'), fill = c("#0000CD", "#00FFFF", "#C1CDCD"), title="8-day mean max", legend = c("> 4 °C", "2-4 °C", "< 2 °C"), bty = "n", cex=.5, inset=c(.1,0), text.col="black");
+
+    
+      title(paste0("Available Steelhead spawning habitat in the ", nameBasin,", 1 Feb - 15 June, 2011-2013"), line=-0.1, adj=.80, col.main="black", col.sub="black", outer=FALSE, cex.main=0.6, cex.sub=0.5)
+      mtext(paste0("Julian Day ", namey),side =1, outer=TRUE, line=-4, col="black", cex=.5)
+      mtext(paste0(yearPath),side =1, outer=TRUE, line=-3, col="black", cex=.75)
+        
+       tmp2 <- subplot(
+        plot(sequ[1:i], dispPerc[1:i], type="l", col="lightblue", bty="n", ylim=c(0,100), xlim=c(1,102), xlab="      2011    2012    2013    2014    2015    2016", ylab="", cex.lab=.8, cex.main=.9, main="Percent usable stream length", adj=0, line=.5, col.lab="black", col.main = "black", cex.axis=0.6, col.axis="black", bg="white", yaxp=c(0,100,2), xaxp=c(2011,2016,2)),
+        
+        x=grconvertX(c(0.02,0.45), from='npc'), 
+        y=grconvertY(c(0.02, 0.20), from='npc'),
+        size=c(1,1.5), vadj=0.5, hadj=0.5, 
+        pars=list( mar=c(0,0,0,0)+0.1, cex=0.5))
+       
+        op <- par(no.readonly=TRUE)
+      
+      
+       tmp2 <- subplot(
+        plot(sequ[1:i], dispPerc2[1:i], type="l", col="cyan2", bty="n", ylim=c(0,100), xlim=c(1,102), xlab="      2011    2012    2013    2014    2015    2016", ylab="", cex.lab=.8, cex.main=.9, main="Percent usable stream length", adj=0, line=.5, col.lab="black", col.main = "black", cex.axis=0.6, col.axis="black", bg="white", yaxp=c(0,100,2), xaxp=c(2011,2016,2)),
+        
+        x=grconvertX(c(0.02,0.45), from='npc'), 
+        y=grconvertY(c(0.02, 0.20), from='npc'),
+        size=c(1,1.5), vadj=0.5, hadj=0.5, 
+        pars=list( mar=c(0,0,0,0)+0.1, cex=0.5))
+        
+       op <- par(no.readonly=TRUE)
+      par(tmp2)
+      points(sequ[m], dispPerc[m], pch=16, col="red", cex=0.7)
+      par(op)
+      
+      dev.off()
+```
+output just the percent / year plot
+```{r}
+
+    j <- length(dispPerc)  
+    
+    filename <- paste0(otherOutPath, "/output/", basin, "_STHD_", temp, "_graph", ".png", sep="")
+    png(filename=filename, res = 300, width = 1200, height = 1200, units = "px", bg="white")
+    
+    par(mar=c(4,4,4,4)+0.1)
+  plot(sequ[1:j], dispPerc[1:j], type="l", col="lightblue", bty="n", ylim=c(0,110), xlim=c(1,102),
+       
+       xlab="      2011     2012      2013      2014      2015      2016", ylab="", cex.lab=.5, cex.main=.4, 
+       main=paste0("Steelhead spawning habitat in the ", nameBasin, " under ", temp, " °C, 2011-2016 \n \n Percent usable stream length"), adj=0, line=0.1, col.lab="black", col.main = "black", 
+       cex.axis=0.5, col.axis="black", bg="white", yaxp=c(0,100,2), xaxp=c(2011,2016,2))
+  points(sequ[1:i], dispPerc2[1:i], type="l", col="cyan2") 
+  legend(x=grconvertX(c(0.84, 0.99), from='npc'),
+         y=grconvertY(c(0.0, 0.1), from='npc'),
+         fill = c("lightblue", "cyan2"), legend = c("> 2 °C", "> 4 °C"), bty = "n", cex=.4, text.col="black");
+
+```
