@@ -474,7 +474,7 @@ Fall data model
   plot(x, y, main="fall")
 ```
 ```{r}
-  mod <- lm(y ~ x + I(x^2) + z + e )
+  mod <- lm(y ~ x + I(x^2) + z + e)
   sum_mod <- summary(mod)
   sum_mod
 ```
